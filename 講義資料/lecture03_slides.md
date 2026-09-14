@@ -53,13 +53,9 @@ style: |
 $$\mathbf{S}_{next} = f(\mathbf{X}, \mathbf{S}_{current})$$
 $$\mathbf{Y} = g(\mathbf{X}, \mathbf{S}_{current})$$
 
-```
-          ┌───────────────────────────────────┐
-          │                                   │ 状態帰還
-          ▼                                   │
- ───> [ 次状態論理 ] ───> [ 状態レジスタ ] ───┴───> [ 出力論理 ] ───> 出力
-入力   (組合せ回路)        (D-FF群: 同期)            (組合せ回路)
-```
+<p align="center">
+  <img src="figures/lecture03_sequential_concept.svg" width="680">
+</p>
 
 - **記憶性**: 過去の入力履歴の累積が「状態（State）」としてレジスタに保持される。
 
@@ -181,13 +177,9 @@ RegNext の紹介です。
 
 カウンタは、クロックに同期して特定の数列を規則的に巡回する順序回路。
 
-```
-                    ┌─────────────────────────┐
-                    │                         │ count (現在の値)
-                    ▼                         │
-   ───> [ 比較器 / 次状態論理 ] ───> [ レジスタ ] ──┴───> rollover (桁上げ)
-  en        (ラップアラウンド)           (RegInit)
-```
+<p align="center">
+  <img src="figures/lecture03_counter_architecture.svg" width="660">
+</p>
 
 ### カウンタの3大構成要素
 1. **状態レジスタ (`RegInit`)**: 現在のカウント値を保持するD-FF群。
@@ -240,13 +232,7 @@ when(cntReg === (n - 1).U) {
 ### 業界標準の優先度アーキテクチャ
 $$\mathbf{clear\ (最優先)} > \mathbf{load\ (第2優先)} > \mathbf{en\ (通常動作)}$$
 
-```
- [loadData] ──┐
-              ├── [MUX 2: load] ──┐
- [count + 1] ─┘        ▲          ├── [MUX 1: clear] ──> [次状態]
-                      load        │          ▲
- 0.U(初期値) ─────────────────────┘        clear
-```
+<p align="center"><img src="figures/lecture03_control_priority_mux.svg" width="640"></p>
 
 - **同期クリア (`clear`)**: どのような状態でも強制的に 0 に初期化する（安全装置）。
 - **データロード (`load`)**: 任意の値からカウントを開始させる。
@@ -329,12 +315,7 @@ N-1 の状態の時に rollover が High になります。
 ### PWM (Pulse Width Modulation) とは
 一定の周期 $T$ の中で、パルスが High である時間（デューティ比 $Duty$）を変化させる制御方式。
 
-```
-周期 T ───────────────────────────────>
-┌──────────────┐                      ┌──────────────┐
-│  High (Duty) │      Low             │  High (Duty) │
-┘              └──────────────────────┘              └────
-```
+<p align="center"><img src="figures/lecture03_pwm_waveform.svg" width="660"></p>
 
 - **用途**: モータの回転数制御、LEDの無段階輝度調光、D級アンプ。
 - **ハードウェア構成**:
@@ -351,20 +332,9 @@ N-1 の状態の時に rollover が High になります。
 
 ## 12. PWM発生器の回路ブロック図
 
-```
- period ──┐
-          ├── [ カウンタ比較器 ] ──┐
- cntReg ──┘                        ▼
-                              [ クリア ]
-                                   │
-                                   ▼
-          ┌─────────────────> [ cntReg ] (0〜period)
-          │                        │
-          │                        ├──┐
- duty ────┼────────────────────────┼──┼──> [ < 比較器 ] ──> pwmOut
-          │                        │  │        (cnt < duty)
- en ──────┴────────────────────────┴──┘
-```
+<p align="center">
+  <img src="figures/lecture03_pwm_generator.svg" width="680">
+</p>
 
 - $cntReg < duty$ ならば $pwmOut = 1$
 - $cntReg \ge duty$ ならば $pwmOut = 0$

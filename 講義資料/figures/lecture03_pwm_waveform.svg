@@ -9,10 +9,10 @@
       .fill-high { fill: #eff6ff; }
       .shadow { filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.05)); }
     </style>
-    <marker id="arrow-dim" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-dim" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b"/>
     </marker>
-    <marker id="arrow-start" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-start" viewBox="0 0 10 10" refX="2" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 10 1.5 L 2 5 L 10 8.5 z" fill="#64748b"/>
     </marker>
   </defs>

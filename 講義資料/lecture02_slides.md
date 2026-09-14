@@ -72,12 +72,9 @@ C言語やPythonなどのソフトウェアでは、if文の条件が偽なら�
 <div style="display: flex; justify-content: space-between;">
 <div style="width: 48%;">
 
-```
- in0 ───────┐
-            ├──> [ 2-to-1 MUX ] ───> out
- in1 ───────┘        ▲
-                     │ sel
-```
+<p align="center">
+  <img src="figures/lecture02_mux2to1.svg" width="300">
+</p>
 
 </div>
 <div style="width: 48%;">
@@ -130,16 +127,9 @@ Chiselの型チェッカーにより、両方の入力のビット幅が完全�
 
 4-to-1 MUXは、3つの2-to-1 MUXを木構造（トーナメント表形式）に結合することで合成できます。
 
-```
- in0 ──┐
-       ├── [MUX 0] ──┐
- in1 ──┘      ▲      │
-            sel(0)   ├── [MUX 2] ───> out
- in2 ──┐             │      ▲
-       ├── [MUX 1] ──┘    sel(1)
- in3 ──┘      ▲
-            sel(0)
-```
+<p align="center">
+  <img src="figures/lecture02_mux4_tree.svg" width="560">
+</p>
 
 ```scala
 val muxLow  = Mux(io.sel(0), io.in1, io.in0)
@@ -178,13 +168,9 @@ when(io.condA) {
 ### ハードウェアとしての実体
 これはソフトウェアの逐次実行ブロックではなく、**優先度付きマルチプレクサの連鎖 (Priority Chain)** として合成されます。
 
-```
- dataDefault ──┐
-               ├── [MUX B] ──┐
- dataB ────────┘      ▲      ├── [MUX A] ───> out
-                    condB    │      ▲
- dataA ──────────────────────┘    condA
-```
+<p align="center">
+  <img src="figures/lecture02_priority_chain.svg" width="560">
+</p>
 
 <!-- Note:
 Chiselの when 構文のハードウェア的な意味を解説します。
@@ -282,17 +268,7 @@ Wire(UInt(8.W)) と宣言して後から条件代入するのではなく、Wire
 
 4ビット2進数 ($0 \sim 9$) を受け取り、7つのLEDセグメント ($a \sim g$) の点灯パターンへ変換する。
 
-```
-      ── a ──
-    │         │
-    f         b
-    │         │
-      ── g ──
-    │         │
-    e         c
-    │         │
-      ── d ──
-```
+<p align="center"><img src="figures/lecture02_seven_segment.svg" width="380"></p>
 
 ### セグメント配置と真理値表の例
 | 数字 | 点灯セグメント ($a \sim g$) | 7ビット値 (`abcdefg_2`) |
@@ -357,12 +333,7 @@ class SevenSegDecoder extends Module {
 複数の入力線が**同時にアクティブ**になった場合、どの要求を優先すべきか？
 $\implies$ 最も高い優先度（例: 最上位ビット MSB）を持つ入力を選択する。
 
-```
- [in(3)] (最高優先) ──┐
- [in(2)] ─────────────┼──> [ Priority Encoder ] ──> pos (2bit: 0〜3)
- [in(1)] ─────────────┤                         ──> valid (要求あり)
- [in(0)] (最低優先) ──┘
-```
+<p align="center"><img src="figures/lecture02_priority_encoder.svg" width="580"></p>
 
 - **用途**: プロセッサの割り込みコントローラ、バスのアービター（調停回路）。
 

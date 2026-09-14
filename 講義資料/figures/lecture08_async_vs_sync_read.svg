@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 260" width="100%" height="100%">
+  <defs>
+    <style>
+      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #1e293b; }
+      .bold-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: bold; fill: #0f172a; }
+      .title-async { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 15px; font-weight: bold; fill: #1e40af; }
+      .title-sync { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 15px; font-weight: bold; fill: #047857; }
+      .wire-label { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 12px; font-weight: bold; }
+      .sub-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; fill: #64748b; }
+      .wire { stroke: #2563eb; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .wire-out { stroke: #16a34a; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+      .wire-clk { stroke: #d97706; stroke-width: 2; fill: none; stroke-linecap: round; stroke-dasharray: 4,3; }
+      .shadow { filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.06)); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-out" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow-clk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706"/>
+    </marker>
+    <linearGradient id="asyncBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
+    </linearGradient>
+    <linearGradient id="syncBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#ecfdf5"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect x="10" y="10" width="720" height="240" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- ==================== Async Read (Left Panel) ==================== -->
+  <g transform="translate(20, 20)">
+    <rect x="0" y="0" width="340" height="200" rx="12" fill="url(#asyncBg)" stroke="#3b82f6" stroke-width="1.8"/>
+    <text x="170" y="28" text-anchor="middle" class="title-async">非同期読み出し: Mem</text>
+    <text x="170" y="46" text-anchor="middle" class="sub-label" fill="#1e40af" font-weight="bold">組合せ読み出し（0サイクル遅延）</text>
+
+    <!-- Address input -->
+    <path d="M 20, 105 L 80, 105" class="wire" marker-end="url(#arrow)"/>
+    <text x="15" y="100" class="wire-label" fill="#2563eb">raddr</text>
+
+    <!-- Combinational Decode Block -->
+    <g class="shadow" transform="translate(80, 70)">
+      <rect x="0" y="0" width="160" height="70" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="2"/>
+      <text x="80" y="32" text-anchor="middle" class="bold-label" font-size="13">組合せデコード</text>
+      <text x="80" y="52" text-anchor="middle" class="sub-label" font-size="11">巨大な MUX 回路</text>
+    </g>
+
+    <!-- Data output -->
+    <path d="M 240, 105 L 305, 105" class="wire-out" marker-end="url(#arrow-out)"/>
+    <text x="312" y="109" class="wire-label" fill="#16a34a">rdata</text>
+
+    <!-- Badge -->
+    <rect x="35" y="155" width="270" height="26" rx="6" fill="#dbeafe"/>
+    <text x="170" y="172" text-anchor="middle" class="sub-label" fill="#1e40af" font-weight="bold">
+      ⚡ 即座に出力（同一サイクル利用可能）
+    </text>
+  </g>
+
+  <!-- ==================== Sync Read (Right Panel) ==================== -->
+  <g transform="translate(380, 20)">
+    <rect x="0" y="0" width="340" height="200" rx="12" fill="url(#syncBg)" stroke="#10b981" stroke-width="1.8"/>
+    <text x="170" y="28" text-anchor="middle" class="title-sync">同期読み出し: SyncReadMem</text>
+    <text x="170" y="46" text-anchor="middle" class="sub-label" fill="#047857" font-weight="bold">同期サンプリング（1サイクル遅延）</text>
+
+    <!-- Address input -->
+    <path d="M 20, 105 L 75, 105" class="wire" marker-end="url(#arrow)"/>
+    <text x="15" y="100" class="wire-label" fill="#2563eb">raddr</text>
+
+    <!-- Clock line into block -->
+    <path d="M 155, 48 L 155, 68" class="wire-clk" marker-end="url(#arrow-clk)"/>
+    <text x="155" y="44" text-anchor="middle" class="sub-label" fill="#d97706" font-weight="bold">CLK (エッジ同期)</text>
+
+    <!-- Memory Block with Internal Register -->
+    <g class="shadow" transform="translate(75, 70)">
+      <rect x="0" y="0" width="160" height="70" rx="8" fill="#ffffff" stroke="#10b981" stroke-width="2"/>
+      <text x="80" y="32" text-anchor="middle" class="bold-label" font-size="13">同期BRAMセル</text>
+      <text x="80" y="52" text-anchor="middle" class="sub-label" font-size="11">内蔵出力レジスタ (D-FF)</text>
+    </g>
+
+    <!-- Data output -->
+    <path d="M 235, 105 L 305, 105" class="wire-out" marker-end="url(#arrow-out)"/>
+    <text x="312" y="109" class="wire-label" fill="#16a34a">rdata</text>
+
+    <!-- Badge -->
+    <rect x="35" y="155" width="270" height="26" rx="6" fill="#d1fae5"/>
+    <text x="170" y="172" text-anchor="middle" class="sub-label" fill="#065f46" font-weight="bold">
+      ⏱ 1クロック後にデータ確定（高周波動作）
+    </text>
+  </g>
+</svg>

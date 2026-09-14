@@ -7,7 +7,20 @@ import chisel3.util._
 // 第1回: 組合せ回路の基礎 (Combinational Logic)
 // ============================================================================
 
-// 基本問題: 1ビット全加算器 (Full Adder)
+// 基本問題1: 1ビット半加算器 (Half Adder)
+class HalfAdder extends Module {
+  val io = IO(new Bundle {
+    val a    = Input(Bool())
+    val b    = Input(Bool())
+    val sum  = Output(Bool())
+    val cout = Output(Bool())
+  })
+
+  io.sum  := io.a ^ io.b
+  io.cout := io.a & io.b
+}
+
+// 基本問題2: 1ビット全加算器 (Full Adder)
 class FullAdder extends Module {
   val io = IO(new Bundle {
     val a    = Input(Bool())
@@ -21,65 +34,23 @@ class FullAdder extends Module {
   io.cout := (io.a & io.b) | (io.cin & (io.a ^ io.b))
 }
 
-// 基本問題: 4ビット・リップルキャリー加算器
-class RippleCarryAdder4 extends Module {
+// 発展問題: 4ビット加算・パリティ検出器 (Adder with Parity)
+// ※ サブモジュールは使わず、単一モジュール内で拡張加算 (+&) とビットスライス、縮約XOR (xorR) を用いて完結
+class AdderWithParity4 extends Module {
   val io = IO(new Bundle {
-    val a    = Input(UInt(4.W))
-    val b    = Input(UInt(4.W))
-    val cin  = Input(Bool())
-    val sum  = Output(UInt(4.W))
-    val cout = Output(Bool())
+    val a      = Input(UInt(4.W))
+    val b      = Input(UInt(4.W))
+    val cin    = Input(Bool())
+    val sum    = Output(UInt(4.W))
+    val cout   = Output(Bool())
+    val parity = Output(Bool()) // sum の奇数パリティ (1の数が奇数ならtrue)
   })
 
-  val fa0 = Module(new FullAdder)
-  val fa1 = Module(new FullAdder)
-  val fa2 = Module(new FullAdder)
-  val fa3 = Module(new FullAdder)
-
-  fa0.io.a   := io.a(0)
-  fa0.io.b   := io.b(0)
-  fa0.io.cin := io.cin
-
-  fa1.io.a   := io.a(1)
-  fa1.io.b   := io.b(1)
-  fa1.io.cin := fa0.io.cout
-
-  fa2.io.a   := io.a(2)
-  fa2.io.b   := io.b(2)
-  fa2.io.cin := fa1.io.cout
-
-  fa3.io.a   := io.a(3)
-  fa3.io.b   := io.b(3)
-  fa3.io.cin := fa2.io.cout
-
-  io.sum  := Cat(fa3.io.sum, fa2.io.sum, fa1.io.sum, fa0.io.sum)
-  io.cout := fa3.io.cout
-}
-
-// 発展問題: 4ビット加減算器（オーバーフロー検出フラグ付き）
-class AddSub4 extends Module {
-  val io = IO(new Bundle {
-    val a        = Input(UInt(4.W))
-    val b        = Input(UInt(4.W))
-    val sub      = Input(Bool()) // 0: 加算, 1: 減算
-    val result   = Output(UInt(4.W))
-    val overflow = Output(Bool())
-  })
-
-  // sub=1のときbを全ビット反転
-  val bInvert = io.b ^ Fill(4, io.sub)
-  val rca = Module(new RippleCarryAdder4)
-  rca.io.a   := io.a
-  rca.io.b   := bInvert
-  rca.io.cin := io.sub
-
-  io.result := rca.io.result
-
-  // 符号付きオーバーフロー検出: AとB'の符号が同じで、結果の符号が異なる場合に発生
-  val signA   = io.a(3)
-  val signB   = bInvert(3)
-  val signRes = rca.io.sum(3)
-  io.overflow := (signA === signB) && (signRes =/= signA)
+  // +& 演算子により最上位キャリーを失わない 5ビットの加算結果を生成
+  val sumExt = io.a +& io.b + io.cin.asUInt
+  io.sum    := sumExt(3, 0)
+  io.cout   := sumExt(4)
+  io.parity := io.sum.xorR
 }
 
 // ============================================================================

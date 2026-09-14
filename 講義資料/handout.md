@@ -42,7 +42,7 @@ style: |
 | `SInt(w.W)` | $w$ ビット2の補数整数 | $w$ 本のバス | `val s = Wire(SInt(16.W))` |
 | `+&` | 拡張加算（キャリー保持） | $w+1$ ビット加算器 | `val sumExt = a +& b` |
 | `-&` | 拡張減算（ボロー保持） | $w+1$ ビット減算器 | `val subExt = a -& b` |
-| `Cat(hi, lo)` | バス結合（上位/下位） | 物理配線バンドル | `val word = Cat(highNibble, lowNibble)` |
+| `Cat(hi, lo)` / `hi ## lo` | バス結合（上位/下位） | 物理配線バンドル | `val word = highNibble ## lowNibble` |
 | `x(hi, lo)` | ビットスライス抽出 | バスから部分配線 | `val slice = x(7, 4)` |
 | `x.orR` | 縮約OR (Reduction OR) | ORツリー回路 | `val anyBit = x.orR` (非ゼロ判定) |
 | `Mux(c, t, f)` | 2-to-1 マルチプレクサ | 物理MUXゲート | `val res = Mux(sel, in1, in0)` |
@@ -132,7 +132,7 @@ io.rdata := Mux(bypass, io.wdata, rawData)
 
 | 回 | 基本問題（必須 / 45分） | 発展問題（推奨 / 35分） | 重点チェック項目 |
 | :-: | :--- | :--- | :--- |
-| **第1回** | `FullAdder`, `RippleCarryAdder4` | `AddSub4` (減算・オーバーフロー) | 拡張加算 `+&`、符号反転 $B \oplus sub$ |
+| **第1回** | `HalfAdder`, `FullAdder` | `AdderWithParity4` (加算・パリティ) | 拡張加算 `+&`、縮約XOR `xorR` |
 | **第2回** | `Mux4to1`, `SevenSegDecoder` | `PriorityEncoder4` (`valid` 出力) | `WireDefault`、`io.in.orR` |
 | **第3回** | `ModuloNCounter` (クリア/ロード/en) | `PwmGenerator` (周期/Duty比較) | $N-1$ ラップ、優先度 `clear > load > en` |
 | **第4回** | `SelfCorrectingRingCounter`, `JohnsonCounter` | `GrayCodeCounter` (ハミング距離1) | `PopCount(state) === 1.U` 自己復帰 |

@@ -1,0 +1,104 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 260" width="100%" height="100%">
+  <defs>
+    <style>
+      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #1e293b; }
+      .bold-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: bold; fill: #0f172a; }
+      .title-moore { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 15px; font-weight: bold; fill: #15803d; }
+      .title-mealy { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 15px; font-weight: bold; fill: #b91c1c; }
+      .wire-label { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 12px; font-weight: bold; }
+      .sub-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; fill: #64748b; }
+      .wire { stroke: #2563eb; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .wire-out { stroke: #16a34a; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+      .wire-glitch { stroke: #dc2626; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-dasharray: 4,3; }
+      .shadow { filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.06)); }
+    </style>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-out" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arrow-glitch" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626"/>
+    </marker>
+    <linearGradient id="mooreBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0fdf4"/>
+    </linearGradient>
+    <linearGradient id="mealyBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fef2f2"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect x="10" y="10" width="720" height="240" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- ==================== Moore Type (Left Panel) ==================== -->
+  <g transform="translate(20, 20)">
+    <rect x="0" y="0" width="340" height="200" rx="12" fill="url(#mooreBg)" stroke="#22c55e" stroke-width="1.8"/>
+    <text x="170" y="28" text-anchor="middle" class="title-moore">Moore（ムーア）型 FSM 【推奨】</text>
+    <text x="170" y="46" text-anchor="middle" class="sub-label" fill="#166534" font-weight="bold">出力 Y_t = g(S_t) : 状態レジスタのみから生成</text>
+
+    <!-- State Register Block -->
+    <g class="shadow" transform="translate(20, 75)">
+      <rect x="0" y="0" width="90" height="60" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="2"/>
+      <text x="45" y="28" text-anchor="middle" class="bold-label" font-size="12">状態レジスタ</text>
+      <text x="45" y="46" text-anchor="middle" class="wire-label" fill="#2563eb" font-size="11">stateReg</text>
+    </g>
+
+    <!-- Output Logic Block -->
+    <g class="shadow" transform="translate(150, 75)">
+      <rect x="0" y="0" width="90" height="60" rx="8" fill="#ffffff" stroke="#16a34a" stroke-width="2"/>
+      <text x="45" y="28" text-anchor="middle" class="bold-label" font-size="12">出力論理</text>
+      <text x="45" y="46" text-anchor="middle" class="sub-label" font-size="10">組合せ回路</text>
+    </g>
+
+    <!-- Wiring -->
+    <path d="M 110, 105 L 150, 105" class="wire" marker-end="url(#arrow)"/>
+    <path d="M 240, 105 L 305, 105" class="wire-out" marker-end="url(#arrow-out)"/>
+    <text x="312" y="109" class="wire-label" fill="#16a34a">出力</text>
+
+    <!-- Badge -->
+    <rect x="35" y="155" width="270" height="26" rx="6" fill="#dcfce7"/>
+    <text x="170" y="172" text-anchor="middle" class="sub-label" fill="#15803d" font-weight="bold">
+      ✔ グリッチフリー（クロック同期で安定）
+    </text>
+  </g>
+
+  <!-- ==================== Mealy Type (Right Panel) ==================== -->
+  <g transform="translate(380, 20)">
+    <rect x="0" y="0" width="340" height="200" rx="12" fill="url(#mealyBg)" stroke="#ef4444" stroke-width="1.8"/>
+    <text x="170" y="28" text-anchor="middle" class="title-mealy">Mealy（ミーリー）型 FSM 【要注意】</text>
+    <text x="170" y="46" text-anchor="middle" class="sub-label" fill="#991b1b" font-weight="bold">出力 Y_t = g(S_t, X_t) : 入力と状態の両方に依存</text>
+
+    <!-- State Register Block -->
+    <g class="shadow" transform="translate(20, 65)">
+      <rect x="0" y="0" width="90" height="50" rx="8" fill="#ffffff" stroke="#3b82f6" stroke-width="2"/>
+      <text x="45" y="24" text-anchor="middle" class="bold-label" font-size="12">状態レジスタ</text>
+      <text x="45" y="40" text-anchor="middle" class="wire-label" fill="#2563eb" font-size="11">stateReg</text>
+    </g>
+
+    <!-- Input in wire (Direct path into Output Logic!) -->
+    <text x="15" y="145" class="wire-label" fill="#dc2626">入力 in</text>
+    <path d="M 70, 140 L 150, 140" class="wire-glitch" marker-end="url(#arrow-glitch)"/>
+
+    <!-- Output Logic Block -->
+    <g class="shadow" transform="translate(150, 65)">
+      <rect x="0" y="0" width="90" height="90" rx="8" fill="#ffffff" stroke="#ef4444" stroke-width="2"/>
+      <text x="45" y="38" text-anchor="middle" class="bold-label" font-size="12">出力論理</text>
+      <text x="45" y="58" text-anchor="middle" class="sub-label" font-size="10">組合せ回路</text>
+    </g>
+
+    <!-- Wiring -->
+    <path d="M 110, 90 L 150, 90" class="wire" marker-end="url(#arrow)"/>
+    <path d="M 240, 110 L 305, 110" class="wire-out" marker-end="url(#arrow-out)"/>
+    <text x="312" y="114" class="wire-label" fill="#16a34a">出力</text>
+
+    <!-- Badge -->
+    <rect x="35" y="165" width="270" height="26" rx="6" fill="#fee2e2"/>
+    <text x="170" y="182" text-anchor="middle" class="sub-label" fill="#b91c1c" font-weight="bold">
+      ⚠ 入力のグリッチが出力ピンへ直接突き抜ける！
+    </text>
+  </g>
+</svg>

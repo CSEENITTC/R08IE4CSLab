@@ -1,29 +1,32 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 230" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 230" width="780" height="230">
+  <style>
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; fill: #1e293b; }
+    .bold-label { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; }
+    .fa-title { font-family: system-ui, -apple-system, sans-serif; font-size: 16px; font-weight: 700; fill: #1e40af; }
+    .wire-label { font-family: 'SF Mono', Consolas, Menlo, Monaco, monospace; font-size: 12px; font-weight: 700; }
+    .sub-label { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #64748b; }
+    .wire-in { stroke: #2563eb; stroke-width: 2.2; fill: none; stroke-linecap: round; }
+    .wire-out { stroke: #16a34a; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+    .wire-carry { stroke: #d97706; stroke-width: 2.8; fill: none; stroke-linecap: round; }
+    .ripple-indicator { stroke: #ea580c; stroke-width: 1.8; stroke-dasharray: 4,3; fill: none; }
+  </style>
+
   <defs>
-    <style>
-      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #1e293b; }
-      .bold-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: bold; fill: #0f172a; }
-      .fa-title { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 15px; font-weight: bold; fill: #1e40af; }
-      .wire-label { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 12px; font-weight: bold; }
-      .sub-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; fill: #64748b; }
-      .wire-in { stroke: #2563eb; stroke-width: 2.2; fill: none; stroke-linecap: round; }
-      .wire-out { stroke: #16a34a; stroke-width: 2.5; fill: none; stroke-linecap: round; }
-      .wire-carry { stroke: #d97706; stroke-width: 2.8; fill: none; stroke-linecap: round; }
-      .ripple-indicator { stroke: #ea580c; stroke-width: 1.5; stroke-dasharray: 4,3; fill: none; }
-      .shadow { filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.06)); }
-    </style>
-    <marker id="arrow-in" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-in" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
     </marker>
-    <marker id="arrow-out" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-out" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a"/>
     </marker>
-    <marker id="arrow-carry" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-carry" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706"/>
     </marker>
-    <marker id="arrow-ripple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-ripple" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#ea580c"/>
     </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="115%" height="115%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
     <linearGradient id="faBg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="100%" stop-color="#f8fafc"/>
@@ -31,11 +34,11 @@
   </defs>
 
   <!-- Background Canvas -->
-  <rect x="10" y="10" width="760" height="210" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <rect x="5" y="5" width="770" height="220" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
 
   <!-- ==================== FA 3 (bit 3, MSB: 左側) ==================== -->
-  <g class="shadow" transform="translate(90, 55)">
-    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2"/>
+  <g transform="translate(90, 55)">
+    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
     <text x="52" y="32" text-anchor="middle" class="fa-title">FA 3</text>
     <text x="52" y="52" text-anchor="middle" class="sub-label" font-weight="bold" fill="#1e40af">bit [3] (MSB)</text>
     <!-- Internal port markers: 右からcinが入り、左からcoutが出る -->
@@ -47,8 +50,8 @@
   </g>
 
   <!-- ==================== FA 2 (bit 2) ==================== -->
-  <g class="shadow" transform="translate(250, 55)">
-    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2"/>
+  <g transform="translate(250, 55)">
+    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
     <text x="52" y="32" text-anchor="middle" class="fa-title">FA 2</text>
     <text x="52" y="52" text-anchor="middle" class="sub-label">bit [2]</text>
     <text x="93" y="70" text-anchor="end" class="sub-label" fill="#d97706">cin</text>
@@ -59,8 +62,8 @@
   </g>
 
   <!-- ==================== FA 1 (bit 1) ==================== -->
-  <g class="shadow" transform="translate(410, 55)">
-    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2"/>
+  <g transform="translate(410, 55)">
+    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
     <text x="52" y="32" text-anchor="middle" class="fa-title">FA 1</text>
     <text x="52" y="52" text-anchor="middle" class="sub-label">bit [1]</text>
     <text x="93" y="70" text-anchor="end" class="sub-label" fill="#d97706">cin</text>
@@ -71,8 +74,8 @@
   </g>
 
   <!-- ==================== FA 0 (bit 0, LSB: 右側) ==================== -->
-  <g class="shadow" transform="translate(570, 55)">
-    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2"/>
+  <g transform="translate(570, 55)">
+    <rect x="0" y="0" width="105" height="95" rx="8" fill="url(#faBg)" stroke="#3b82f6" stroke-width="2" filter="url(#shadow)"/>
     <text x="52" y="32" text-anchor="middle" class="fa-title">FA 0</text>
     <text x="52" y="52" text-anchor="middle" class="sub-label" font-weight="bold" fill="#1e40af">bit [0] (LSB)</text>
     <text x="93" y="70" text-anchor="end" class="sub-label" fill="#d97706">cin</text>
@@ -84,26 +87,26 @@
 
   <!-- ==================== Inputs a, b (from Top) ==================== -->
   <!-- FA 3 (MSB) -->
-  <path d="M 125, 25 L 125, 55" class="wire-in" marker-end="url(#arrow-in)"/>
-  <path d="M 160, 25 L 160, 55" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 125, 25 L 125, 53" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 160, 25 L 160, 53" class="wire-in" marker-end="url(#arrow-in)"/>
   <text x="125" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">a(3)</text>
   <text x="160" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">b(3)</text>
 
   <!-- FA 2 -->
-  <path d="M 285, 25 L 285, 55" class="wire-in" marker-end="url(#arrow-in)"/>
-  <path d="M 320, 25 L 320, 55" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 285, 25 L 285, 53" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 320, 25 L 320, 53" class="wire-in" marker-end="url(#arrow-in)"/>
   <text x="285" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">a(2)</text>
   <text x="320" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">b(2)</text>
 
   <!-- FA 1 -->
-  <path d="M 445, 25 L 445, 55" class="wire-in" marker-end="url(#arrow-in)"/>
-  <path d="M 480, 25 L 480, 55" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 445, 25 L 445, 53" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 480, 25 L 480, 53" class="wire-in" marker-end="url(#arrow-in)"/>
   <text x="445" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">a(1)</text>
   <text x="480" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">b(1)</text>
 
   <!-- FA 0 (LSB) -->
-  <path d="M 605, 25 L 605, 55" class="wire-in" marker-end="url(#arrow-in)"/>
-  <path d="M 640, 25 L 640, 55" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 605, 25 L 605, 53" class="wire-in" marker-end="url(#arrow-in)"/>
+  <path d="M 640, 25 L 640, 53" class="wire-in" marker-end="url(#arrow-in)"/>
   <text x="605" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">a(0)</text>
   <text x="640" y="20" text-anchor="middle" class="wire-label" fill="#2563eb">b(0)</text>
 
@@ -122,26 +125,26 @@
 
   <!-- ==================== Carry Ripple Chain (Right to Left: LSB -> MSB) ==================== -->
   <!-- cin input (from Right into FA 0) -->
-  <path d="M 740, 115 L 675, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
-  <text x="745" y="119" text-anchor="start" class="wire-label" fill="#d97706">cin</text>
+  <path d="M 735, 115 L 677, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
+  <text x="742" y="119" text-anchor="start" class="wire-label" fill="#d97706">cin</text>
 
   <!-- FA 0 cout to FA 1 cin -->
-  <path d="M 570, 115 L 515, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
-  <text x="542" y="108" text-anchor="middle" class="wire-label" fill="#d97706">c(0)</text>
+  <path d="M 570, 115 L 517, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
+  <text x="543" y="108" text-anchor="middle" class="wire-label" fill="#d97706">c(0)</text>
 
   <!-- FA 1 cout to FA 2 cin -->
-  <path d="M 410, 115 L 355, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
-  <text x="382" y="108" text-anchor="middle" class="wire-label" fill="#d97706">c(1)</text>
+  <path d="M 410, 115 L 357, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
+  <text x="383" y="108" text-anchor="middle" class="wire-label" fill="#d97706">c(1)</text>
 
   <!-- FA 2 cout to FA 3 cin -->
-  <path d="M 250, 115 L 195, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
-  <text x="222" y="108" text-anchor="middle" class="wire-label" fill="#d97706">c(2)</text>
+  <path d="M 250, 115 L 197, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
+  <text x="223" y="108" text-anchor="middle" class="wire-label" fill="#d97706">c(2)</text>
 
   <!-- FA 3 cout to left output -->
-  <path d="M 90, 115 L 30, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
-  <text x="25" y="119" text-anchor="end" class="wire-label" fill="#d97706">cout</text>
+  <path d="M 90, 115 L 35, 115" class="wire-carry" marker-end="url(#arrow-carry)"/>
+  <text x="28" y="119" text-anchor="end" class="wire-label" fill="#d97706">cout</text>
 
   <!-- Ripple Propagation Indicator Underneath (Right to Left) -->
-  <path d="M 700, 168 Q 390, 175 80, 168" class="ripple-indicator" marker-end="url(#arrow-ripple)"/>
-  <text x="390" y="180" text-anchor="middle" class="sub-label" fill="#ea580c" font-weight="bold">キャリーの波及伝搬遅延 (LSB から MSB へ Ripple: t_delay ∝ N)</text>
+  <path d="M 690, 168 Q 380, 175 75, 168" class="ripple-indicator" marker-end="url(#arrow-ripple)"/>
+  <text x="380" y="182" text-anchor="middle" class="sub-label" fill="#ea580c" font-weight="bold">キャリーの波及伝搬遅延 (LSB から MSB へ Ripple 伝播 : 遅延はビット数 N に比例)</text>
 </svg>

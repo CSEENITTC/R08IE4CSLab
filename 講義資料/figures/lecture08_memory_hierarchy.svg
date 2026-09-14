@@ -17,16 +17,16 @@
   </style>
 
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e40af"/>
     </marker>
-    <marker id="arrow-subtle" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-subtle" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 2 L 7 5 L 0 8 z" fill="#475569"/>
     </marker>
-    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626"/>
     </marker>
-    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a"/>
     </marker>
     <filter id="shadow" x="-3%" y="-6%" width="106%" height="116%" filterUnits="userSpaceOnUse">

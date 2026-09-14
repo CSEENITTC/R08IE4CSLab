@@ -10,10 +10,10 @@
       .port { fill: #2563eb; stroke: #ffffff; stroke-width: 2; }
       .shadow { filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.06)); }
     </style>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
     </marker>
-    <marker id="arrow-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <marker id="arrow-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706"/>
     </marker>
     <linearGradient id="topBg" x1="0" y1="0" x2="0" y2="1">

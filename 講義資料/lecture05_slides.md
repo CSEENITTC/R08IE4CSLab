@@ -56,18 +56,7 @@ style: |
 ### 構造化設計 (Structured Hierarchical Design)
 回路を明確な機能境界を持つ独立した「サブモジュール」に分割し、最上位（トップモジュール）でそれらを結線する。
 
-```
- [トップモジュール: TopModule]
- ┌──────────────────────────────────────────┐
- │  [サブモジュール A]    [サブモジュール B] │
- │  ┌──────────────┐    ┌──────────────┐   │
- │  │ Logic Unit   │    │ Arith Unit   │   │
- │  └──────────────┘    └──────────────┘   │
- │          │                   │          │
- │          └───> [ MUX ] <─────┘          │
- └──────────────────┼───────────────────────┘
-                    ▼
-```
+<p align="center"><img src="figures/lecture05_hierarchy_concept.svg" width="660"></p>
 
 <!-- Note:
 構造化設計の必要性です。
@@ -195,25 +184,9 @@ Chiselの強力な機能であるバルク接続演算子 `<>` です。
 
 プロセッサの心臓部であり、算術演算（加減算）とビット論理演算（AND, OR, XOR等）を実行する統合モジュール。
 
-```
-             ┌────────────────────────┐
-             │       a, b (8bit)      │
-             └───────────┬────────────┘
-                         │ 並列分配
-           ┌─────────────┴─────────────┐
-           ▼                           ▼
- ┌───────────────────┐       ┌───────────────────┐
- │ ArithmeticUnit    │       │ LogicUnit         │
- │ (加算, 減算)      │       │ (AND, OR, XOR, NOT│
- └─────────┬─────────┘       └─────────┬─────────┘
-           │ res, cout                 │ res
-           └─────────────┬─────────────┘
-                         ▼
-                 [ MUX セレクタ ] <─── aluSel (演算選択)
-                         │
-                         ▼
-                    out, carryOut
-```
+<p align="center">
+  <img src="figures/lecture05_structured_alu.svg" width="650">
+</p>
 
 <!-- Note:
 本日の題材であるALUの内部ブロック図です。
@@ -349,15 +322,9 @@ Module(new ArithmeticUnit) と Module(new LogicUnit) で実体化し、入力a�
 </div>
 <div style="width: 48%;">
 
-```
- [ ALU 演算結果 (8bit) ]
-           │
-           ├─> [ === 0.U ] ──────> Zero (Z)
-           │
-           ├─> [ bit(7) ] ───────> Negative (N)
-           │
-           └─> [ carryOut ] ─────> Carry (C)
-```
+<p align="center">
+  <img src="figures/lecture05_status_flags.svg" width="300">
+</p>
 
 </div>
 </div>
@@ -375,14 +342,9 @@ RISC-VやARMなどのCPUには、演算結果の状態を表すフラグがあ�
 
 ALUの演算結果とフラグをレジスタでサンプリングし、1クロック後に同期出力する。
 
-```
-                     ┌───────────────────┐
- io.a, io.b ───> [ 構造化ALU (組合せ) ] ───>│ 出力段レジスタ   │───> io.out
-                     └───────────────────┘  │ (RegNext)         │
-                                            │                   │───> io.zero, ...
- io.validIn ───────────────────────────────>│ validReg          │───> io.validOut
-                                            └───────────────────┘
-```
+<p align="center">
+  <img src="figures/lecture05_pipeline_stage.svg" width="660">
+</p>
 
 ### パイプライン化の意義
 - 組合せ論理の遅延が出力ピンの先へ伝搬するのを遮断。

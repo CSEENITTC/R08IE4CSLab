@@ -7,7 +7,21 @@ import chisel3.util._
 // 第1回: 組合せ回路の基礎 (Combinational Logic)
 // ============================================================================
 
-// 基本問題: 1ビット全加算器 (Full Adder)
+// 基本問題1: 1ビット半加算器 (Half Adder)
+class HalfAdder extends Module {
+  val io = IO(new Bundle {
+    val a    = Input(Bool())
+    val b    = Input(Bool())
+    val sum  = Output(Bool())
+    val cout = Output(Bool())
+  })
+
+  // TODO: sum と cout の論理式を記述してください
+  io.sum  := false.B
+  io.cout := false.B
+}
+
+// 基本問題2: 1ビット全加算器 (Full Adder)
 class FullAdder extends Module {
   val io = IO(new Bundle {
     val a    = Input(Bool())
@@ -22,34 +36,22 @@ class FullAdder extends Module {
   io.cout := false.B
 }
 
-// 基本問題: 4ビット・リップルキャリー加算器
-class RippleCarryAdder4 extends Module {
+// 発展問題: 4ビット加算・パリティ検出器 (Adder with Parity)
+class AdderWithParity4 extends Module {
   val io = IO(new Bundle {
-    val a    = Input(UInt(4.W))
-    val b    = Input(UInt(4.W))
-    val cin  = Input(Bool())
-    val sum  = Output(UInt(4.W))
-    val cout = Output(Bool())
+    val a      = Input(UInt(4.W))
+    val b      = Input(UInt(4.W))
+    val cin    = Input(Bool())
+    val sum    = Output(UInt(4.W))
+    val cout   = Output(Bool())
+    val parity = Output(Bool()) // sum の奇数パリティ (1の数が奇数ならtrue)
   })
 
-  // TODO: 4つの全加算器セルを直列接続するか、拡張加算を用いて実装してください
-  io.sum  := 0.U
-  io.cout := false.B
-}
-
-// 発展問題: 4ビット加減算器（オーバーフロー検出フラグ付き）
-class AddSub4 extends Module {
-  val io = IO(new Bundle {
-    val a        = Input(UInt(4.W))
-    val b        = Input(UInt(4.W))
-    val sub      = Input(Bool()) // 0: 加算, 1: 減算
-    val result   = Output(UInt(4.W))
-    val overflow = Output(Bool())
-  })
-
-  // TODO: 2の補数演算に基づき、加算・減算の切り替えとオーバーフロー検出を実装してください
-  io.result   := 0.U
-  io.overflow := false.B
+  // TODO: +& 演算子による拡張加算、ビットスライス、縮約XOR (xorR) を用いて実装してください
+  // ※ サブモジュールは使用せず、単一モジュール内で直接記述してください
+  io.sum    := 0.U
+  io.cout   := false.B
+  io.parity := false.B
 }
 
 // ============================================================================
