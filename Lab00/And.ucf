@@ -1,0 +1,3 @@
+NET "io_a" LOC = P34 |PULLUP;
+NET "io_b" LOC = P35 |PULLUP;
+NET "io_out" LOC = P83;
