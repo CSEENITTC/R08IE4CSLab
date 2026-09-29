@@ -63,7 +63,7 @@ sbt run
 sbt test
 ```
 
-### Viewing Simulation Results as Waveforms
+### View Simulation Results as Waveforms
 ```
 surfer &
 ```
