@@ -63,9 +63,15 @@ sbt run
 sbt test
 ```
 
-### View the Simulation Results as Waveforms
+### Viewing Simulation Results as Waveforms
 ```
 surfer &
+```
+Open your .vcd file in surfer.
+Drag the desired module name and drop it into the simulation window.
+Note: You can locate .vcd files using the following command:
+```
+find . -name "*.vcd"
 ```
 
 ## References
