@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 220" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 630 210" width="100%" height="100%">
   <defs>
     <style>
       .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #1e293b; }
@@ -27,44 +27,44 @@
   </defs>
 
   <!-- Background Canvas -->
-  <rect x="10" y="10" width="600" height="200" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <rect x="10" y="10" width="610" height="190" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
 
   <!-- Priority Encoder Block -->
-  <g class="shadow" transform="translate(190, 30)">
-    <rect x="0" y="0" width="220" height="150" rx="12" fill="url(#encBg)" stroke="#3b82f6" stroke-width="2.2"/>
-    <text x="110" y="45" text-anchor="middle" class="title-label">Priority Encoder</text>
-    <text x="110" y="70" text-anchor="middle" class="bold-label" fill="#1e40af">4 to 2 (優先度付き)</text>
-    <text x="110" y="105" text-anchor="middle" class="sub-label">最優先ビット検出回路</text>
-    <text x="110" y="125" text-anchor="middle" class="sub-label">in(3) &gt; in(2) &gt; in(1) &gt; in(0)</text>
+  <g class="shadow" transform="translate(170, 30)">
+    <rect x="0" y="0" width="200" height="150" rx="12" fill="url(#encBg)" stroke="#3b82f6" stroke-width="2.2"/>
+    <text x="100" y="45" text-anchor="middle" class="title-label">Priority Encoder</text>
+    <text x="100" y="70" text-anchor="middle" class="bold-label" fill="#1e40af">4 to 2 (優先度付き)</text>
+    <text x="100" y="105" text-anchor="middle" class="sub-label">最優先ビット検出回路</text>
+    <text x="100" y="125" text-anchor="middle" class="sub-label">in(3) &gt; in(2) &gt; in(1) &gt; in(0)</text>
   </g>
 
-  <!-- Input Wires (Left to Right) -->
+  <!-- Input Wires (Shortened & Right-Aligned Labels) -->
   <!-- in(3) -->
-  <path d="M 40, 50 L 190, 50" class="wire-in" marker-end="url(#arrow-in)"/>
-  <text x="35" y="45" text-anchor="start" class="wire-label" fill="#2563eb">in(3)</text>
-  <text x="35" y="60" text-anchor="start" class="sub-label" fill="#dc2626" font-weight="bold">【最高優先】</text>
+  <path d="M 105, 50 L 170, 50" class="wire-in" marker-end="url(#arrow-in)"/>
+  <text x="100" y="46" text-anchor="end" class="wire-label" fill="#2563eb">in(3)</text>
+  <text x="100" y="58" text-anchor="end" class="sub-label" fill="#dc2626" font-weight="bold">【最高優先】</text>
 
   <!-- in(2) -->
-  <path d="M 40, 85 L 190, 85" class="wire-in" marker-end="url(#arrow-in)"/>
-  <text x="35" y="80" text-anchor="start" class="wire-label" fill="#2563eb">in(2)</text>
+  <path d="M 105, 85 L 170, 85" class="wire-in" marker-end="url(#arrow-in)"/>
+  <text x="100" y="89" text-anchor="end" class="wire-label" fill="#2563eb">in(2)</text>
 
   <!-- in(1) -->
-  <path d="M 40, 120 L 190, 120" class="wire-in" marker-end="url(#arrow-in)"/>
-  <text x="35" y="115" text-anchor="start" class="wire-label" fill="#2563eb">in(1)</text>
+  <path d="M 105, 120 L 170, 120" class="wire-in" marker-end="url(#arrow-in)"/>
+  <text x="100" y="124" text-anchor="end" class="wire-label" fill="#2563eb">in(1)</text>
 
   <!-- in(0) -->
-  <path d="M 40, 155 L 190, 155" class="wire-in" marker-end="url(#arrow-in)"/>
-  <text x="35" y="150" text-anchor="start" class="wire-label" fill="#2563eb">in(0)</text>
-  <text x="35" y="165" text-anchor="start" class="sub-label" fill="#64748b">【最低優先】</text>
+  <path d="M 105, 155 L 170, 155" class="wire-in" marker-end="url(#arrow-in)"/>
+  <text x="100" y="151" text-anchor="end" class="wire-label" fill="#2563eb">in(0)</text>
+  <text x="100" y="163" text-anchor="end" class="sub-label" fill="#64748b">【最低優先】</text>
 
-  <!-- Output Wires (Left to Right) -->
+  <!-- Output Wires (Shortened & Sufficient Margins) -->
   <!-- pos (2bit) -->
-  <path d="M 410, 75 L 560, 75" class="wire-out" marker-end="url(#arrow-out)"/>
-  <text x="565" y="70" text-anchor="start" class="wire-label" fill="#16a34a">pos (UInt(2.W))</text>
-  <text x="565" y="87" text-anchor="start" class="sub-label" fill="#15803d">優先入力番号 (0〜3)</text>
+  <path d="M 370, 75 L 435, 75" class="wire-out" marker-end="url(#arrow-out)"/>
+  <text x="445" y="71" text-anchor="start" class="wire-label" fill="#16a34a">pos (UInt(2.W))</text>
+  <text x="445" y="86" text-anchor="start" class="sub-label" fill="#15803d">優先入力番号 (0〜3)</text>
 
   <!-- valid (1bit) -->
-  <path d="M 410, 135 L 560, 135" class="wire-valid" marker-end="url(#arrow-valid)"/>
-  <text x="565" y="130" text-anchor="start" class="wire-label" fill="#d97706">valid (Bool)</text>
-  <text x="565" y="147" text-anchor="start" class="sub-label" fill="#b45309">有効要求あり (in.orR)</text>
+  <path d="M 370, 135 L 435, 135" class="wire-valid" marker-end="url(#arrow-valid)"/>
+  <text x="445" y="131" text-anchor="start" class="wire-label" fill="#d97706">valid (Bool)</text>
+  <text x="445" y="146" text-anchor="start" class="sub-label" fill="#b45309">有効要求あり (in.orR)</text>
 </svg>
