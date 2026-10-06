@@ -395,7 +395,7 @@ $$io.enSec \land secCnt.rollover \land minCnt.rollover$$
   - 同期イネーブル (`cout` $\to$ `en`) によるカスケード接続
   - 1の位 (`secUnits`) と 10の位 (`secTens`)、および `cout` の出力
 
-### 発展問題（推奨 / 目安30〜35分）
+### 確認課題
 - **`DigitalClockCore`**:
   - 秒(60進)、分(60進)、時(24進)の3段同期カスケード結合
   - 23:59:59 $\to$ 00:00:00 の完全自動巡回動作の検証

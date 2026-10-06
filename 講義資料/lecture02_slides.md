@@ -456,7 +456,7 @@ when / elsewhen で条件を16個並べると、16段のMUXが数珠つなぎに
 1. **`Mux4to1`**: 2-to-1 MUXの組み合わせ、またはセレクタによる4入力MUXの設計
 2. **`SevenSegDecoder`**: `switch / is` と `WireDefault` を用いた透過ラッチフリーな7セグメントデコーダの設計
 
-### 発展問題（推奨 / 目安30〜35分）
+### 確認課題
 - **`PriorityEncoder4`**:
   - 4ビット入力の最上位アクティブビット位置を出力
   - 縮約OR (`orR`) による `valid` フラグの生成

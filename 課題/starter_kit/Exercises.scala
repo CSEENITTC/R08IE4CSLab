@@ -101,7 +101,28 @@ class PriorityEncoder4 extends Module {
 // 第3回: 順序回路と基本カウンタ (Sequential Logic & Counters)
 // ============================================================================
 
-// 基本問題: ロード・イネーブル・同期クリア付き 任意進数カウンタ
+// 基本問題1: 1Hz信号生成・0.5秒LED点滅カウンタ (9MHzクロック対応)
+class OneHzGenerator(val clkFreq: Int = 9000000) extends Module {
+  val io = IO(new Bundle {
+    val en         = Input(Bool())
+    val clear      = Input(Bool())
+    val ledBlink   = Output(Bool())
+    val oneHzPulse = Output(Bool())
+  })
+
+  val halfPeriod = clkFreq / 2
+  val fullPeriod = clkFreq
+  val cntWidth   = log2Ceil(fullPeriod)
+
+  val cntReg = RegInit(0.U(cntWidth.W))
+  val ledReg = RegInit(false.B)
+
+  // TODO: clear -> en の優先度でカウント動作と 0.5秒LED点滅、1秒ストローブパルスを実装してください
+  io.ledBlink   := ledReg
+  io.oneHzPulse := false.B
+}
+
+// 基本問題2: ロード・イネーブル・同期クリア付き 任意進数カウンタ
 class ModuloNCounter(val n: Int, val width: Int) extends Module {
   val io = IO(new Bundle {
     val en       = Input(Bool())

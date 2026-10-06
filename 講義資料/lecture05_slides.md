@@ -457,7 +457,7 @@ class PipelinedALUWithFlags extends Module {
   - `LogicUnit`（4種ビット演算）の設計
   - 上位モジュールでのインスタンス化と `aluSel` による結果選択
 
-### 発展問題（推奨 / 目安30〜35分）
+### 確認課題
 - **`PipelinedALUWithFlags`**:
   - `StructuredALU` のインスタンス化と出力段レジスタ (`RegNext`) 挿入
   - Zero, Negative, Carry フラグ生成および `validOut` 同期化

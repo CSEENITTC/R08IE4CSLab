@@ -63,7 +63,19 @@
 
 ## 第3回: 順序回路と基本カウンタ (Sequential Logic & Counters)
 
-### 基本問題 (必須・目安45分): ロード・イネーブル・同期クリア付き 任意進数カウンタ
+### 基本問題1 (必須・目安25分): クロック分周による 1Hz 信号生成・0.5秒 LED 点滅カウンタ
+- **モジュール名**: `OneHzGenerator(clkFreq: Int = 9000000)`
+  - **入力**: `en` (Bool), `clear` (Bool)
+  - **出力**: `ledBlink` (Bool: 0.5秒点灯/0.5秒消灯の1Hz点滅), `oneHzPulse` (Bool: 1秒に1回、1クロック幅のストローブパルス)
+  - **論理仕様**:
+    - デフォルトクロック周波数は 9MHz（$9,000,000\text{Hz}$）。
+    - 優先度: `clear` (最優先) $\to$ `en`。
+    - `clear`: 次クロックでカウンタを 0、`ledBlink` を `false.B` に初期化。
+    - `en`: カウント動作。
+      - 半周期（`clkFreq / 2`）および全周期（`clkFreq`）満了時に `ledReg` を反転（トグル）。
+      - 全周期満了（`cntReg === (clkFreq - 1).U`）かつ `en` 有効時に、`oneHzPulse` を 1 クロックだけ `true.B` にアサート。
+
+### 基本問題2 (必須・目安25分): ロード・イネーブル・同期クリア付き 任意進数カウンタ
 - **モジュール名**: `ModuloNCounter(n: Int, width: Int)`
   - **入力**: `en` (Bool), `clear` (Bool), `load` (Bool), `loadData` (UInt(width.W))
   - **出力**: `count` (UInt(width.W)), `rollover` (Bool)
@@ -73,7 +85,7 @@
     - `load`: 次クロックで `loadData` をレジスタに格納（ただし $n$ 未満にクリップ）。
     - `en`: カウント動作。`count === (n - 1).U` の時、`rollover` を 1 クロックだけ `true.B` にし、次クロックで 0 へ復帰。それ以外は `count + 1.U`。
 
-### 発展問題 (推奨・目安35分): デューティ比可変 PWM パルス発生器
+### 確認課題 (目安30分): デューティ比可変 PWM パルス発生器
 - **モジュール名**: `PwmGenerator(periodMax: Int = 255)`
   - **入力**: `period` (UInt(8.W)), `duty` (UInt(8.W)), `en` (Bool)
   - **出力**: `pwmOut` (Bool)
