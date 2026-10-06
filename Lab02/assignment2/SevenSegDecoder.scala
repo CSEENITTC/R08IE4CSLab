@@ -26,5 +26,11 @@ class SevenSegDecoder extends Module {
 }
 
 object SevenSegDecoderGenerator extends App {
-  emitVerilog(new SevenSegDecoder, Array("--target-dir", "generated"))
+  val verilog = _root_.circt.stage.ChiselStage.emitSystemVerilog(
+    new SevenSegDecoder,
+    firtoolOpts = Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
+  val output = Paths.get("generated", "SevenSegDecoder.v")
+  Files.createDirectories(output.getParent)
+  Files.write(output, verilog.getBytes(StandardCharsets.UTF_8))
 }
