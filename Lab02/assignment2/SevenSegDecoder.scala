@@ -1,5 +1,7 @@
 import chisel3._
 import chisel3.util._
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, Paths}
 
 // 基本問題2: 7セグメントLEDデコーダ
 class SevenSegDecoder extends Module {
