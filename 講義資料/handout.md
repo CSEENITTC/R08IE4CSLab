@@ -130,13 +130,13 @@ io.rdata := Mux(bypass, io.wdata, rawData)
 
 ## 5. 演習課題一覧とチェックリスト (90分演習)
 
-| 回 | 基本問題（必須 / 45分） | 発展問題（推奨 / 35分） | 重点チェック項目 |
+| 回 | 基本問題（必須 / 45分） | 確認課題（推奨 / 35分） | 重点チェック項目 |
 | :-: | :--- | :--- | :--- |
 | **第1回** | `HalfAdder`, `FullAdder` | `AdderWithParity4` (加算・パリティ) | 拡張加算 `+&`、縮約XOR `xorR` |
 | **第2回** | `Mux4to1`, `SevenSegDecoder` | `PriorityEncoder4` (`valid` 出力) | `WireDefault`、`io.in.orR` |
 | **第3回** | `ModuloNCounter` (クリア/ロード/en) | `PwmGenerator` (周期/Duty比較) | $N-1$ ラップ、優先度 `clear > load > en` |
 | **第4回** | `SelfCorrectingRingCounter`, `JohnsonCounter` | `GrayCodeCounter` (ハミング距離1) | `PopCount(state) === 1.U` 自己復帰 |
-| **第5回** | `StructuredALU` (算術/論理統合) | `PipelinedALUWithFlags` (パイプライン) | `Module(new ...)`、`RegNext` 遅延同期 |
-| **第6回** | `Counter60` (10進×6進カスケード) | `DigitalClockCore` (24時間時計) | **リップルクロック厳禁**、`cout` $\to$ `en` |
+| **第5回** | `Counter60` (10進×6進カスケード) | `DigitalClockCore` (24時間時計) | **リップルクロック厳禁**、`cout` $\to$ `en` |
+| **第6回** | `StructuredALU` (算術/論理統合) | `PipelinedALUWithFlags` (パイプライン) | `Module(new ...)`、`RegNext` 遅延同期 |
 | **第7回** | `SequenceDetector101` (Moore型) | `TrafficLightController` (タイマ連動) | `ChiselEnum`、重複 "10101" 検出 |
 | **第8回** | `RegisterFile8x8` (2R1W 非同期) | `BypassedRegisterFile` (RAWバイパス) | 同一サイクルでの `waddr === raddr` バイパス |

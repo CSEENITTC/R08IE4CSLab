@@ -202,7 +202,44 @@ class GrayCodeCounter extends Module {
 }
 
 // ============================================================================
-// 第5回: 構造化設計 (Structured Hierarchical Design)
+// 第5回: 60進カウンタの構造化設計 (Hierarchical 60-Counter)
+// ============================================================================
+
+// 基本問題: 同期カスケード 60進カウンタ
+class Counter60 extends Module {
+  val io = IO(new Bundle {
+    val en       = Input(Bool())
+    val clear    = Input(Bool())
+    val secUnits = Output(UInt(4.W)) // 1の位 (0〜9)
+    val secTens  = Output(UInt(3.W)) // 10の位 (0〜5)
+    val cout     = Output(Bool())    // 59でアサート
+  })
+
+  // TODO: 10進カウンタと6進カウンタを同期カスケード(en接続)で階層化設計してください
+  // ※ 非同期クロックの使用は厳禁です
+  io.secUnits := 0.U
+  io.secTens  := 0.U
+  io.cout     := false.B
+}
+
+// 発展問題: 24時間デジタル時計コア
+class DigitalClockCore extends Module {
+  val io = IO(new Bundle {
+    val enSec = Input(Bool()) // 1秒パルス
+    val clear = Input(Bool())
+    val sec   = Output(UInt(6.W)) // 0〜59
+    val min   = Output(UInt(6.W)) // 0〜59
+    val hour  = Output(UInt(5.W)) // 0〜23
+  })
+
+  // TODO: 秒(60進) -> 分(60進) -> 時(24進) を同期カスケードで結合してください
+  io.sec  := 0.U
+  io.min  := 0.U
+  io.hour := 0.U
+}
+
+// ============================================================================
+// 第6回: 構造化設計とALU (Structured Hierarchical Design & ALU)
 // ============================================================================
 
 // 基本問題 サブモジュール1: 算術ユニット
@@ -268,43 +305,6 @@ class PipelinedALUWithFlags extends Module {
   io.negative := false.B
   io.carry    := false.B
   io.validOut := false.B
-}
-
-// ============================================================================
-// 第6回: 60進カウンタの構造化設計 (Hierarchical 60-Counter)
-// ============================================================================
-
-// 基本問題: 同期カスケード 60進カウンタ
-class Counter60 extends Module {
-  val io = IO(new Bundle {
-    val en       = Input(Bool())
-    val clear    = Input(Bool())
-    val secUnits = Output(UInt(4.W)) // 1の位 (0〜9)
-    val secTens  = Output(UInt(3.W)) // 10の位 (0〜5)
-    val cout     = Output(Bool())    // 59でアサート
-  })
-
-  // TODO: 10進カウンタと6進カウンタを同期カスケード(en接続)で階層化設計してください
-  // ※ 非同期クロックの使用は厳禁です
-  io.secUnits := 0.U
-  io.secTens  := 0.U
-  io.cout     := false.B
-}
-
-// 発展問題: 24時間デジタル時計コア
-class DigitalClockCore extends Module {
-  val io = IO(new Bundle {
-    val enSec = Input(Bool()) // 1秒パルス
-    val clear = Input(Bool())
-    val sec   = Output(UInt(6.W)) // 0〜59
-    val min   = Output(UInt(6.W)) // 0〜59
-    val hour  = Output(UInt(5.W)) // 0〜23
-  })
-
-  // TODO: 秒(60進) -> 分(60進) -> 時(24進) を同期カスケードで結合してください
-  io.sec  := 0.U
-  io.min  := 0.U
-  io.hour := 0.U
 }
 
 // ============================================================================

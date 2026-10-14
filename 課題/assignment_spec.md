@@ -122,7 +122,29 @@
 
 ---
 
-## 第5回: 構造化設計 (Structured Hierarchical Design)
+## 第5回: 60進カウンタの構造化設計 (Hierarchical 60-Counter)
+
+### 基本問題 (必須・目安45分): 同期カスケード 60進カウンタ
+- **モジュール名**: `Counter60`
+  - **構成**: 10進カウンタ (`ModuloNCounter(10, 4)`) と 6進カウンタ (`ModuloNCounter(6, 3)`)
+  - **入力**: `en` (Bool), `clear` (Bool)
+  - **出力**: `secUnits` (UInt(4.W)), `secTens` (UInt(3.W)), `cout` (Bool)
+  - **論理仕様**:
+    - **非同期リップルクロックの厳禁**: 共通のクロックで駆動。
+    - 10進カウンタの `rollover` と外部 `en` の論理積 (`rollover10 && en`) を 6進カウンタの `en` 入力に接続。
+    - `cout` は 59 (秒の9かつ10の位の5) で `en` が有効なときに `true.B` をアサート。
+
+### 確認課題 (推奨・目安35分): デジタル時計コア（時・分・秒 統合階層モジュール）
+- **モジュール名**: `DigitalClockCore`
+  - **入力**: `enSec` (Bool: 1Hzパルス), `clear` (Bool)
+  - **出力**: `sec` (UInt(6.W)), `min` (UInt(6.W)), `hour` (UInt(5.W))
+  - **論理仕様**:
+    - 秒(60進) $\to$ 分(60進) $\to$ 時(24進: 0〜23) の3段カスケード接続。
+    - 各桁上げ信号が同期イネーブルとして正しく伝播し、23時59分59秒の次で 00:00:00 に同期リセットされる回路。
+
+---
+
+## 第6回: 構造化設計とALU (Structured Hierarchical Design & ALU)
 
 ### 基本問題 (必須・目安45分): 算術・論理分離型 階層ALU
 - **モジュール名**: `ArithmeticUnit`
@@ -136,35 +158,13 @@
   - **出力**: `out` (UInt(8.W)), `carryOut` (Bool)
   - **論理仕様**: `ArithmeticUnit` と `LogicUnit` をインスタンス化し、階層間ポートをバインド。最上位選択ビットで結果を選択。
 
-### 発展問題 (推奨・目安35分): ステータスフラグ生成 & パイプライン出力段
+### 確認課題 (推奨・目安35分): ステータスフラグ生成 & パイプライン出力段
 - **モジュール名**: `PipelinedALUWithFlags`
   - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `aluSel` (UInt(3.W)), `validIn` (Bool)
   - **出力**: `out` (UInt(8.W)), `zero` (Bool), `negative` (Bool), `carry` (Bool), `validOut` (Bool)
   - **論理仕様**:
     - `StructuredALU` の出力段に同期レジスタを挿入（パイプライン化）。
     - フラグ生成: `zero` (`out === 0.U`), `negative` (`out(7) === 1.B`), `carry` (算術演算時の桁上げ)。
-
----
-
-## 第6回: 60進カウンタの構造化設計 (Hierarchical 60-Counter)
-
-### 基本問題 (必須・目安45分): 同期カスケード 60進カウンタ
-- **モジュール名**: `Counter60`
-  - **構成**: 10進カウンタ (`ModuloNCounter(10, 4)`) と 6進カウンタ (`ModuloNCounter(6, 3)`)
-  - **入力**: `en` (Bool), `clear` (Bool)
-  - **出力**: `secUnits` (UInt(4.W)), `secTens` (UInt(3.W)), `cout` (Bool)
-  - **論理仕様**:
-    - **非同期リップルクロックの厳禁**: 共通のクロックで駆動。
-    - 10進カウンタの `rollover` と外部 `en` の論理積 (`rollover10 && en`) を 6進カウンタの `en` 入力に接続。
-    - `cout` は 59 (秒の9かつ10の位の5) で `en` が有効なときに `true.B` をアサート。
-
-### 発展問題 (推奨・目安35分): デジタル時計コア（時・分・秒 統合階層モジュール）
-- **モジュール名**: `DigitalClockCore`
-  - **入力**: `enSec` (Bool: 1Hzパルス), `clear` (Bool)
-  - **出力**: `sec` (UInt(6.W)), `min` (UInt(6.W)), `hour` (UInt(5.W))
-  - **論理仕様**:
-    - 秒(60進) $\to$ 分(60進) $\to$ 時(24進: 0〜23) の3段カスケード接続。
-    - 各桁上げ信号が同期イネーブルとして正しく伝播し、23時59分59秒の次で 00:00:00 に同期リセットされる回路。
 
 ---
 
