@@ -1,7 +1,5 @@
 import chisel3._
 import chisel3.util._
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Paths}
 
 // 基本問題2: 7セグメントLEDデコーダ
 class SevenSegDecoder extends Module {
@@ -32,7 +30,7 @@ object SevenSegDecoderGenerator extends App {
     new SevenSegDecoder,
     firtoolOpts = Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
   )
-  val output = Paths.get("generated", "SevenSegDecoder.v")
-  Files.createDirectories(output.getParent)
-  Files.write(output, verilog.getBytes(StandardCharsets.UTF_8))
+  val output = java.nio.file.Paths.get("generated", "SevenSegDecoder.v")
+  java.nio.file.Files.createDirectories(output.getParent)
+  java.nio.file.Files.write(output, verilog.getBytes(java.nio.charset.StandardCharsets.UTF_8))
 }
