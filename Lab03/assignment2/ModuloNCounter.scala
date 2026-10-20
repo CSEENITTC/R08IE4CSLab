@@ -1,26 +1,30 @@
 import chisel3._
 
 // 基本問題: ロード・イネーブル・同期クリア付き 任意進数カウンタ
-class ModuloNCounter(val n: Int = 10, val width: Int = 4) extends Module {
+class ModuloNCounter(val n: Int = 10, val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
     val en       = Input(Bool())
     val clear    = Input(Bool())
-    val load     = Input(Bool())
-    val loadData = Input(UInt(width.W))
     val count    = Output(UInt(width.W))
-    val rollover = Output(Bool())
+    val runLED = Output(Bool())
   })
+
+  val halfPeriod = clkFreq / 2
+  val fullPeriod = clkFreq
 
   val cntReg = RegInit(0.U(width.W))
 
-  // TODO: clear -> load -> en の優先度でカウント動作と rollover 信号を実装してください
+  // TODO: clear -> en の優先度でカウント動作
   // clear: 次クロックで 0 にリセット
-  // load: 次クロックで loadData を格納 (n 未満にクリップ)
-  // en: 通常カウント (count == n-1 のとき rollover を 1 クロック true.B にし 0 に復帰)
-  io.count    := cntReg
-  io.rollover := false.B
+  // modEn: 通常カウント (count == n-1 のとき0に復帰)
+  io.runLED   := ~ledReg
+  io.count    := ~modReg
 }
 
-object ModuloNCounterGenerator extends App {
-  emitVerilog(new ModuloNCounter(10, 4), Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+  new ModuloNCounter,
+  Array("--target-dir", "generated"),
+  Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+)
 }
