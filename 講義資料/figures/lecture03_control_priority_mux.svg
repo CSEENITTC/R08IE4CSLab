@@ -28,27 +28,27 @@
   <!-- Background Canvas -->
   <rect x="10" y="10" width="660" height="210" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
 
-  <!-- ==================== MUX 2: en (通常動作) ==================== -->
+  <!-- ==================== MUX 2: modEn / en (通常動作) ==================== -->
   <g class="shadow" transform="translate(190, 45)">
     <!-- Trapezoid for MUX -->
     <polygon points="0,0 50,15 50,75 0,90" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
     <text x="25" y="45" text-anchor="middle" class="bold-label" fill="#1d4ed8" font-size="12">MUX 2</text>
-    <text x="25" y="60" text-anchor="middle" class="sub-label" fill="#1e40af" font-size="10">(en)</text>
+    <text x="25" y="60" text-anchor="middle" class="sub-label" fill="#1e40af" font-size="10">(modEn)</text>
     <text x="8" y="25" class="sub-label" font-size="10">1</text>
     <text x="8" y="75" class="sub-label" font-size="10">0</text>
   </g>
 
   <!-- Inputs to MUX 2 -->
   <path d="M 30, 60 L 190, 60" class="wire" marker-end="url(#arrow)"/>
-  <text x="25" y="55" class="wire-label" fill="#2563eb">next (インクリメント/0復帰)</text>
+  <text x="25" y="55" class="wire-label" fill="#2563eb">next (modReg+1 / 0復帰)</text>
 
   <path d="M 30, 115 L 190, 115" class="wire" marker-end="url(#arrow)"/>
-  <text x="25" y="110" class="wire-label" fill="#64748b">cntReg (値保持)</text>
+  <text x="25" y="110" class="wire-label" fill="#64748b">modReg (値保持)</text>
 
-  <!-- Control signal: en (上から) -->
+  <!-- Control signal: modEn (上から) -->
   <path d="M 215, 15 L 215, 52" class="ctrl-wire2" marker-end="url(#arrow-ctrl2)"/>
-  <text x="215" y="12" text-anchor="middle" class="wire-label" fill="#2563eb">io.en</text>
-  <text x="215" y="32" text-anchor="middle" class="sub-label" fill="#1d4ed8">【通常動作】</text>
+  <text x="215" y="12" text-anchor="middle" class="wire-label" fill="#2563eb">modEn (1Hzパルス)</text>
+  <text x="215" y="32" text-anchor="middle" class="sub-label" fill="#1d4ed8">【通常動作: 1秒毎】</text>
 
   <!-- ==================== MUX 1: clear (最優先) ==================== -->
   <g class="shadow" transform="translate(390, 70)">
@@ -76,11 +76,11 @@
   <g class="shadow" transform="translate(530, 90)">
     <rect x="0" y="0" width="125" height="50" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="2"/>
     <text x="62" y="25" text-anchor="middle" class="bold-label" fill="#065f46">次状態レジスタ</text>
-    <text x="62" y="42" text-anchor="middle" class="sub-label" fill="#047857">cntReg.D</text>
+    <text x="62" y="42" text-anchor="middle" class="sub-label" fill="#047857">modReg.D</text>
   </g>
 
   <!-- Priority Annotation footer -->
   <text x="340" y="205" text-anchor="middle" class="sub-label" font-weight="bold" fill="#475569">
-    優先順位階層: clear (最優先: 0強制リセット) &gt; en (通常動作: 周期カウント/値保持)
+    優先順位階層: clear (最優先: 0強制リセット) &gt; modEn (通常動作: 1秒毎インクリメント / 値保持)
   </text>
 </svg>

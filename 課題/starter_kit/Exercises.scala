@@ -123,22 +123,29 @@ class OneHzGenerator(val clkFreq: Int = 9000000) extends Module {
 }
 
 // 基本問題2: 1秒ごとにカウントアップする同期クリア付きモジュロNカウンタ
-// 1HzGenerator等の 1Hz ストローブパルス (oneHzPulse) を io.en に入力することで、
-// 1秒ごとに 0 から n-1 までインクリメントし、満了時に 0 に戻る
-class ModuloNCounter(val n: Int, val width: Int) extends Module {
+// 9MHzシステムクロックから1秒パルスを生成し、1秒ごとに 0 〜 n-1 をインクリメント
+// FPGA実機に合わせて負論理 (0で点灯) で LED に出力
+class ModuloNCounter(val n: Int = 10, val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
-    val en       = Input(Bool())         // カウントイネーブル (1Hzパルス等を接続)
+    val en       = Input(Bool())         // カウントイネーブル
     val clear    = Input(Bool())         // 同期クリア (最優先で 0 にリセット)
-    val count    = Output(UInt(width.W)) // 現在のカウント値出力
-    val rollover = Output(Bool())        // 周期満了パルス (count == n-1 かつ en 有効時に 1 クロック High)
+    val count    = Output(UInt(width.W)) // カウント出力 (実機LED向け負論理)
+    val runLED   = Output(Bool())        // 動作確認用LED (0.5秒ごとに反転、負論理)
   })
 
-  val cntReg = RegInit(0.U(width.W))
+  val halfPeriod = clkFreq / 2
+  val fullPeriod = clkFreq
 
-  // TODO: clear -> en の優先度でカウント動作と rollover 信号を実装してください
+  val modReg   = RegInit(0.U(width.W))
+  val cntWidth = log2Ceil(clkFreq)
+  val cntReg   = RegInit(0.U(cntWidth.W))
+  val ledReg   = RegInit(false.B)
+  val modEn    = WireDefault(false.B)
+
+  // TODO: clear -> en の優先度でカウント動作とLED制御を実装してください
   // ※ カウンタ更新論理と出力論理を明確に分離して記述すること
-  io.count    := cntReg
-  io.rollover := false.B
+  io.runLED := ~ledReg
+  io.count  := ~modReg
 }
 
 // 発展問題: プログラマブルPWMパルス発生器

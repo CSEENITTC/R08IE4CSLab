@@ -76,16 +76,19 @@
       - 全周期満了（`cntReg === (clkFreq - 1).U`）かつ `en` 有効時に、`oneHzPulse` を 1 クロックだけ `true.B` にアサート。
 
 ### 基本問題2 (必須・目安25分): 1秒ごとにカウントアップする同期クリア付きモジュロNカウンタ
-- **モジュール名**: `ModuloNCounter(n: Int, width: Int)`
+- **モジュール名**: `ModuloNCounter(n: Int = 10, width: Int = 4, clkFreq: Int = 9000000)`
   - **入力**: `en` (Bool), `clear` (Bool)
-  - **出力**: `count` (UInt(width.W)), `rollover` (Bool)
+  - **出力**: `count` (UInt(width.W)), `runLED` (Bool)
   - **論理仕様**:
-    - `OneHzGenerator` の `oneHzPulse`（1Hzパルス）を `en` 入力に接続することで、1秒ごとに 1 カウントアップする時計用モジュロカウンタの基幹要素。
+    - デフォルトクロック周波数は 9MHz（`clkFreq = 9000000`）。
     - 優先度: `clear` (最優先) $\to$ `en`。
-    - `clear`: 次クロックで `count` を 0 にリセット。
-    - `en`: カウント動作。`count === (n - 1).U` の時、`rollover` を 1 クロックだけ `true.B` にし、次クロックで 0 へ復帰。それ以外は `count + 1.U`。
-    - `en` が `false.B` の時は現在の値を保持し、`rollover` も `false.B`。
-    - **設計原則**: カウンタ更新論理（`when(io.clear) ...`）と出力論理（`io.count`, `io.rollover`）を明確に分離して記述すること。
+    - 内部で 9MHz から 1秒（`clkFreq` サイクル）ストローブパルス `modEn` を生成。
+    - `clear`: 次クロックで `modReg` を 0、`cntReg` を 0、`ledReg` を `false.B` に初期化。
+    - `en`: カウント動作。
+      - 0.5秒（半周期）および1秒（全周期）で `ledReg` を反転（0.5秒点滅）。
+      - 1秒（全周期満了）ごとに `modReg` をインクリメント（`0` 〜 `n-1` を巡回）。
+    - 出力論理: FPGA実機LEDに合わせて負論理でドライブ（`io.runLED := ~ledReg`, `io.count := ~modReg`）。
+    - **設計原則**: カウンタ更新論理と出力論理を明確に分離して記述すること。
 
 ### 確認課題 (目安30分): デューティ比可変 PWM パルス発生器
 - **モジュール名**: `PwmGenerator(periodMax: Int = 255)`

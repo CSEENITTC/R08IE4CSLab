@@ -24,52 +24,49 @@
   <!-- Background Canvas -->
   <rect x="10" y="10" width="700" height="230" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
 
-  <!-- Module 1: OneHzGenerator -->
-  <g class="shadow" transform="translate(40, 45)">
-    <rect x="0" y="0" width="230" height="130" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
-    <rect x="0" y="0" width="230" height="32" rx="10" fill="#eff6ff"/>
-    <text x="115" y="22" text-anchor="middle" class="bold-label" fill="#1e40af">OneHzGenerator</text>
-    <text x="115" y="55" text-anchor="middle" class="sub-label" fill="#64748b">9MHz分周カウンタ</text>
-    <text x="115" y="75" text-anchor="middle" class="sub-label" fill="#64748b">0.5秒反転 / 1秒ストローブ</text>
+  <!-- Module Box: ModuloNCounter (内部構造) -->
+  <g class="shadow" transform="translate(30, 40)">
+    <rect x="0" y="0" width="650" height="150" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+    <rect x="0" y="0" width="650" height="28" rx="10" fill="#eff6ff"/>
+    <text x="325" y="19" text-anchor="middle" class="bold-label" fill="#1e40af">ModuloNCounter (n=10, clkFreq=9MHz) 内部ブロック構成</text>
 
-    <!-- Out pins -->
-    <text x="218" y="100" text-anchor="end" class="wire-label" fill="#16a34a">io.ledBlink</text>
-    <text x="218" y="120" text-anchor="end" class="wire-label" fill="#d97706">io.oneHzPulse</text>
+    <!-- Sub-block 1: 9MHz Divider -->
+    <rect x="20" y="40" width="180" height="90" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="110" y="60" text-anchor="middle" class="bold-label" fill="#334155" font-size="12">9MHz分周カウンタ</text>
+    <text x="110" y="78" text-anchor="middle" class="sub-label">cntReg (24bit)</text>
+    <text x="110" y="96" text-anchor="middle" class="sub-label">0 〜 8,999,999</text>
+
+    <!-- Sub-block 2: LED Toggler -->
+    <rect x="230" y="40" width="170" height="42" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+    <text x="315" y="58" text-anchor="middle" class="bold-label" fill="#b45309" font-size="11">LED反転レジスタ (ledReg)</text>
+    <text x="315" y="72" text-anchor="middle" class="sub-label" fill="#78350f">0.5秒毎に反転</text>
+
+    <!-- Sub-block 3: Modulo-N Counter -->
+    <rect x="230" y="88" width="170" height="42" rx="6" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text x="315" y="106" text-anchor="middle" class="bold-label" fill="#065f46" font-size="11">モジュロNレジスタ (modReg)</text>
+    <text x="315" y="120" text-anchor="middle" class="sub-label" fill="#047857">1秒毎に +1 (0〜n-1)</text>
+
+    <!-- Inverters & Output Drivers -->
+    <g transform="translate(440, 48)">
+      <circle cx="15" cy="8" r="7" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="15" y="12" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">~</text>
+      <text x="30" y="12" class="wire-label" fill="#16a34a">io.runLED (負論理点滅)</text>
+    </g>
+    <g transform="translate(440, 96)">
+      <circle cx="15" cy="8" r="7" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+      <text x="15" y="12" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">~</text>
+      <text x="30" y="12" class="wire-label" fill="#2563eb">io.count (負論理 0〜9)</text>
+    </g>
+
+    <!-- Internal Wires -->
+    <path d="M 200, 60 L 230, 60" class="wire-data"/>
+    <path d="M 200, 105 L 230, 105" class="wire-pulse" marker-end="url(#arrow-pulse)"/>
+    <path d="M 400, 56 L 438, 56" class="wire-data"/>
+    <path d="M 400, 104 L 438, 104" class="wire-data"/>
   </g>
-
-  <!-- ledBlink Output wire -->
-  <path d="M 270, 145 L 320, 145" class="wire-data" stroke="#16a34a" marker-end="url(#arrow-data)"/>
-  <text x="325" y="149" class="wire-label" fill="#16a34a">LED点滅 (0.5s反転)</text>
-
-  <!-- Pulse wire: OneHzGenerator.oneHzPulse -> ModuloNCounter.en -->
-  <path d="M 270, 165 L 430, 165" class="wire-pulse" marker-end="url(#arrow-pulse)"/>
-  <text x="350" y="183" text-anchor="middle" class="wire-label" fill="#d97706">1Hzパルス (1サイクル幅)</text>
-
-  <!-- Module 2: ModuloNCounter (n=10) -->
-  <g class="shadow" transform="translate(430, 45)">
-    <rect x="0" y="0" width="240" height="130" rx="10" fill="#ffffff" stroke="#16a34a" stroke-width="2"/>
-    <rect x="0" y="0" width="240" height="32" rx="10" fill="#ecfdf5"/>
-    <text x="120" y="22" text-anchor="middle" class="bold-label" fill="#065f46">ModuloNCounter (n=10)</text>
-    <text x="120" y="55" text-anchor="middle" class="sub-label" fill="#64748b">1秒ごとにカウントアップ</text>
-
-    <!-- In pin -->
-    <text x="10" y="120" text-anchor="start" class="wire-label" fill="#d97706">io.en</text>
-    <!-- Out pins -->
-    <text x="228" y="100" text-anchor="end" class="wire-label" fill="#2563eb">io.count (0〜9秒)</text>
-    <text x="228" y="120" text-anchor="end" class="wire-label" fill="#7c3aed">io.rollover</text>
-  </g>
-
-  <!-- ModuloNCounter output wires -->
-  <path d="M 670, 145 L 700, 145" class="wire-data" marker-end="url(#arrow-data)"/>
-  <path d="M 670, 165 L 700, 165" class="wire-data" stroke="#7c3aed" marker-end="url(#arrow-data)"/>
-
-  <!-- Common Clock Wire (Single Clock Domain) -->
-  <path d="M 30, 25 L 155, 25 L 155, 45" class="wire-clk" marker-end="url(#arrow-clk)"/>
-  <path d="M 155, 25 L 550, 25 L 550, 45" class="wire-clk" marker-end="url(#arrow-clk)"/>
-  <text x="35" y="20" class="wire-label" fill="#dc2626">共通 9MHz システムクロック (暗黙配線: clock)</text>
 
   <!-- Note Footer -->
   <text x="360" y="222" text-anchor="middle" class="sub-label" font-weight="bold" fill="#334155">
-    完全同期設計: 高速クロック（9MHz）を共有し、低周波パルス（oneHzPulse）を同期イネーブルとして渡す
+    単一クロック完全同期設計: 内部9MHz分周で1秒ストローブ (modEn) を生成し、1秒ごとに安全にカウントアップ
   </text>
 </svg>

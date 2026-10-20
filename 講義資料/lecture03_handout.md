@@ -69,47 +69,40 @@ when(io.en) {
 
 ### 制御入力の優先度仕様 (`clear` > `en`)
 産業用制御回路では、複数の制御信号が同時にアサートされた際の挙動を明確に階層化（優先度付け）します。
-$$\text{clear (最優先: 0強制リセット)} > \text{en (通常動作: インクリメント/保持)}$$
+$$\text{clear (最優先: 0強制リセット)} > \text{modEn (通常動作: 1秒毎インクリメント/保持)}$$
 
 複雑な `load` 信号を排し、安全最優先の同期クリア（`clear`）と通常カウント許可（`en`）の2段階に絞り込むことで、マルチプレクサの多段接続を解消し、クリティカルパスの短縮と堅牢な動作を両立させます。
 
 ```scala
-class ModuloNCounter(val n: Int = 10, val width: Int = 4) extends Module {
+class ModuloNCounter(val n: Int = 10, val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
-    val en       = Input(Bool())         // カウントイネーブル (1Hzパルス等を接続)
+    val en       = Input(Bool())         // カウントイネーブル
     val clear    = Input(Bool())         // 同期クリア (最優先で 0 にリセット)
-    val count    = Output(UInt(width.W)) // 現在のカウント値出力
-    val rollover = Output(Bool())        // 周期満了パルス (count == n-1 かつ en 有効時)
+    val count    = Output(UInt(width.W)) // カウント出力 (実機LED向け負論理)
+    val runLED   = Output(Bool())        // 動作確認用LED (0.5秒反転、負論理)
   })
 
-  val cntReg = RegInit(0.U(width.W))
+  // 1. 9MHz分周カウンタ更新論理（0 〜 fullPeriod-1 を周期カウント）
+  when(io.clear) { cntReg := 0.U }.elsewhen(io.en) {
+    when(cntReg === (clkFreq - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
+  }
+  modEn := io.en && (cntReg === (fullPeriod - 1).U) // 1秒ストローブ
 
-  // 1. カウンタ更新論理 (clear > en の優先度)
-  when(io.clear) {
-    cntReg := 0.U
-  }.elsewhen(io.en) {
-    when(cntReg === (n - 1).U) {
-      cntReg := 0.U
-    }.otherwise {
-      cntReg := cntReg + 1.U
-    }
+  // 2. モジュロN更新論理 (clear > modEn の優先度で 0 〜 n-1 をカウント)
+  when(io.clear) { modReg := 0.U }.elsewhen(modEn) {
+    when(modReg === (n - 1).U) { modReg := 0.U }.otherwise { modReg := modReg + 1.U }
   }
 
-  // 2. 出力論理 (カウンタ更新論理と明確に分離)
-  io.count    := cntReg
-  io.rollover := io.en && (cntReg === (n - 1).U)
+  // 3. LED点滅更新論理 & 4. 出力論理（負論理で実機LEDへ出力）
+  io.runLED := ~ledReg
+  io.count  := ~modReg
 }
 ```
 
-### 1Hzパルスとの連携による1秒時計カウンタの実現
-`OneHzGenerator` で生成した 1クロック幅のストローブパルス `oneHzPulse` を `ModuloNCounter` の `io.en` 入力に接続します。
-- **完全同期設計**: 両モジュールは同一の9MHzシステムクロックで駆動されます。
-- **リップルクロックの排除**: 非同期クロックを一切使用せず、単一クロック領域内でストローブパルスを同期イネーブルとして渡すことで、クロックスキューやメタスタビリティの懸念を完全に排除します。
-- **1秒ごとの動作**: 普段は `en` が Low（カウント保持）。1秒に1回だけ `oneHzPulse` が High になる瞬間に、カウント値が $0 \to 1 \to \dots \to n-1 \to 0$ と 1 つ進みます。
-
-### 桁上げパルス (`rollover`) の生成
-- `rollover` は、カウンタが最大値 $n-1$ に達し、かつ `io.en` が有効な時に**1クロック幅だけ `true.B`** を出力します。
-- レジスタ段を挟まない組合せ論理として生成することで、次段カウンタの同期イネーブル信号として即座に伝達できます（第5回で扱う多段カウンタ同期カスケードのキー信号）。
+### 1秒ストローブパルスと完全同期設計
+- 回路全体が単一の 9MHz システムクロックで駆動されます。
+- リップルクロックを完全排除し、分周カウンタ `cntReg` が満了した瞬間の 1 クロック幅パルス `modEn` をトリガーとしてモジュロレジスタ `modReg` を更新します。
+- ボード上のアクティブLow LEDに合わせて、出力段で反転（`~`）を適用します。
 
 ---
 
@@ -172,12 +165,12 @@ pwmOut     ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾______
    - パラメータ化されたクロック周波数分周カウンタ（デフォルト9MHz）。
    - 0.5秒ごとに `ledBlink` を反転させるトグル動作。
    - 1秒（全周期満了）時に 1クロック幅の `oneHzPulse` パルス出力。
-   - カウンタ記述とLEDレジスタ記述の独立化。
-2. **`ModuloNCounter(n: Int, width: Int)`** (配点35点 / 目安25分)
+   - カウンタ更新とLED反転論理の明確な分離。
+2. **`ModuloNCounter(n: Int = 10, width: Int = 4, clkFreq: Int = 9000000)`** (配点35点 / 目安25分)
    - 1秒ごとにカウントアップする同期クリア付きモジュロ $n$ カウンタの設計。
    - `clear` (最優先リセット) > `en` (カウント動作) の優先度制御。
-   - カウンタ更新論理と出力論理（`count`, `rollover`）の明確な分離。
-   - 最大値 $n-1$ かつ `en` 有効時における 1クロック幅 `rollover` パルスの出力。
+   - 内部9MHz分周による1秒ストローブ `modEn` の生成。
+   - カウンタ更新論理と出力論理の明確な分離、および実機LEDに合わせた負論理出力（`runLED`, `count`）。
 
 ### 確認課題 (目安30分 / 配点30点)
 3. **`PwmGenerator(periodMax: Int = 255)`** (配点30点)
@@ -188,5 +181,5 @@ pwmOut     ‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾______
 - 同期リセット (`RegInit`) が正しく適用されているか (20点)
 - 9MHz 分周カウンタの半周期/全周期判定と LED 反転・パルス生成が正確か (25点)
 - `clear > en` の優先度制御とカウンタ更新/出力論理の分離が正確か (25点)
-- `rollover` パルスが最大値かつイネーブル時のみ1クロック出力されるか (15点)
+- 1秒ストローブパルスによるモジュロカウントと負論理LED出力が正常か (15点)
 - PWM のデューティ比比較とイネーブル停止処理が正確か (15点)

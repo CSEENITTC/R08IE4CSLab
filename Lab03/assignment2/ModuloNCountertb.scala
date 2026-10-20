@@ -3,51 +3,34 @@ import chiseltest._
 import org.scalatest.flatspec.AnyFlatSpec
 
 class ModuloNCountertb extends AnyFlatSpec with ChiselScalatestTester {
-  behavior of "ModuloNCounter"
-
-  it should "correctly count modulo N with clear, en, and rollover" in {
-    test(new ModuloNCounter(5, 3)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
-      // 1. カウント動作の検証 (0 -> 1 -> 2 -> 3 -> 4 -> 0)
+  it should "correctly count modulo N every 1 second with clear, en, and runLED" in {
+    test(new ModuloNCounter(n = 5, width = 4, clkFreq = 4)).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      // 1. カウント動作の検証 (4クロックごとに1秒進み、modRegが 0 -> 1 -> 2 -> 3 -> 4 -> 0 と巡回)
       dut.io.clear.poke(false.B)
       dut.io.en.poke(true.B)
 
-      for (i <- 0 until 5) {
-        dut.io.count.expect(i.U)
-        if (i == 4) {
-          dut.io.rollover.expect(true.B)
-        } else {
-          dut.io.rollover.expect(false.B)
-        }
-        println(s"cycle: count=${dut.io.count.peekInt()}, rollover=${dut.io.rollover.peekBoolean()}")
+      for (i <- 0 until 40) {
+        val expectedMod = (i / 4) % 5
+        val expectedCount = (~expectedMod) & 0xF // 負論理LED出力
+        dut.io.count.expect(expectedCount.U)
+        println(s"cycle $i: count=${dut.io.count.peekInt()} (mod=$expectedMod), runLED=${dut.io.runLED.peekBoolean()}")
         dut.clock.step(1)
       }
-      dut.io.count.expect(0.U)
 
-      // 2. en 無効時の保持検証 (en=false のとき値が保持され、rollover も出ない)
+      // 2. en 無効時の保持検証 (en=false でクロックが進んでもカウント値保持)
       dut.io.en.poke(false.B)
-      dut.clock.step(3)
-      dut.io.count.expect(0.U)
-      dut.io.rollover.expect(false.B)
+      val heldCount = dut.io.count.peekInt()
+      dut.clock.step(8)
+      dut.io.count.expect(heldCount.U)
+      println(s"en=false held: count=${dut.io.count.peekInt()}")
 
-      // 3. 1秒パルス模倣検証 (en を1サイクルだけ High にしてカウントアップ)
-      println("--- 1Hz pulse emulation ---")
-      for (expected <- 1 to 4) {
-        // パルスなし (クロックだけ進む)
-        dut.io.en.poke(false.B)
-        dut.clock.step(2)
-        // 1秒パルス到来 (1サイクルだけ en=true)
-        dut.io.en.poke(true.B)
-        dut.clock.step(1)
-        dut.io.count.expect(expected.U)
-        println(s"1-sec tick: count=${dut.io.count.peekInt()}")
-      }
-
-      // 4. clear (最優先) の検証 (en=true の状態でも clear が優先され 0 になる)
+      // 3. clear (最優先) の検証 (クリアで modReg=0 -> count=15 (~0.U) にリセット)
       dut.io.clear.poke(true.B)
       dut.io.en.poke(true.B)
       dut.clock.step(1)
-      dut.io.count.expect(0.U)
-      println("clear asserted: count successfully reset to 0")
+      dut.io.count.expect(15.U) // ~0.U(4.W) = 15
+      dut.io.runLED.expect(true.B) // ~false.B = true
+      println(s"clear asserted: count=${dut.io.count.peekInt()} (reset to 0)")
     }
   }
 }
