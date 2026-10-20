@@ -25,12 +25,11 @@ class SevenSegDecoder extends Module {
   io.seg := 0.U
 }
 
-object SevenSegDecoderGenerator extends App {
-  val verilog = _root_.circt.stage.ChiselStage.emitSystemVerilog(
-    new SevenSegDecoder,
-    firtoolOpts = Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
-  )
-  val output = java.nio.file.Paths.get("generated", "SevenSegDecoder.v")
-  java.nio.file.Files.createDirectories(output.getParent)
-  java.nio.file.Files.write(output, verilog.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+  new SevenSegDecoder,
+  Array("--target-dir", "generated"),
+  Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  // Array("--lowering-options=disallowLocalVariables")
+)
 }
