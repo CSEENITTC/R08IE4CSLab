@@ -104,6 +104,24 @@ val cntWidth   = log2Ceil(fullPeriod) // 24ビット
 - **0.5秒 LED 点滅 (`ledBlink`)**: `cntReg` が半周期および全周期に達するごとに `ledReg` を反転（トグル）し、0.5秒点灯 / 0.5秒消灯の1Hz点滅を生成。
 - **同期1秒パルス (`oneHzPulse`)**: 全周期満了時に1クロック幅のみ `true.B` をアサートし、後段の秒カウンタの同期イネーブル信号として利用。
 
+```scala
+// カウンタとLED点滅レジスタを独立して記述する設計パターン
+when(io.clear) {
+  cntReg := 0.U
+}.elsewhen(io.en) {
+  when(cntReg === (fullPeriod - 1).U) { cntReg := 0.U }
+  .otherwise { cntReg := cntReg + 1.U }
+}
+
+when(io.clear) {
+  ledReg := false.B
+}.elsewhen(io.en) {
+  when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) {
+    ledReg := !ledReg
+  }
+}
+```
+
 ---
 
 ## 5. デューティ比可変 PWM パルス発生器の原理

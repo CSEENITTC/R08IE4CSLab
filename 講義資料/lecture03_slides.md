@@ -225,30 +225,42 @@ val fullPeriod = clkFreq     // 9,000,000 (1.0秒)
 ## 8. 1Hz生成・LED点滅カウンタの回路アーキテクチャ
 
 <p align="center">
-  <img src="figures/lecture03_one_hz_generator.svg" width="680">
+  <img src="figures/lecture03_one_hz_generator.svg" width="620">
 </p>
 
-### ハードウェア記述のポイント
+### ハードウェア記述のポイント（カウンタとLED制御の独立化）
 ```scala
+// 1. カウンタ更新論理（0 〜 fullPeriod-1 を周期カウント）
 when(io.clear) {
-  cntReg := 0.U; ledReg := false.B
+  cntReg := 0.U
 }.elsewhen(io.en) {
   when(cntReg === (fullPeriod - 1).U) {
-    cntReg := 0.U; ledReg := !ledReg
-  }.elsewhen(cntReg === (halfPeriod - 1).U) {
-    cntReg := cntReg + 1.U; ledReg := !ledReg
+    cntReg := 0.U
   }.otherwise {
     cntReg := cntReg + 1.U
   }
 }
+
+// 2. LED点滅レジスタ更新論理（0.5秒ごとに反転）
+when(io.clear) {
+  ledReg := false.B
+}.elsewhen(io.en) {
+  when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) {
+    ledReg := !ledReg
+  }
+}
+
+// 3. 出力信号の接続
 io.ledBlink   := ledReg
 io.oneHzPulse := io.en && (cntReg === (fullPeriod - 1).U)
 ```
 
 <!-- Note:
 回路ブロック図とChiselコードの対比です。
-cntReg が 4,499,999 に達した瞬間に ledReg を反転させ、8,999,999 に達した瞬間にも ledReg を反転させて 0 にラップアラウンドします。
-これにより、0.5秒点灯・0.5秒消灯の綺麗な1Hz矩形波が ledBlink から出力されます。
+設計の重要なポイントは「カウンタの巡回論理」と「LEDレジスタの反転論理」を明確に分けて記述することです。
+まずカウンタ cntReg は、0から fullPeriod-1（8,999,999）までを数えて0に戻る独立した周期カウンタとして記述します。
+そして ledReg は、cntReg が halfPeriod-1（4,499,999）および fullPeriod-1 に達した瞬間に反転（トグル）させます。
+このように各レジスタの更新条件を独立させることで、回路構造がブロック図と直接一致し、可読性と保守性が大幅に向上します。
 -->
 
 ---

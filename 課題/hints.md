@@ -41,7 +41,7 @@
 
 ### 基本問題1ヒント (`OneHzGenerator`)
 1. **クロック分周の考え方**: 9MHz（$9,000,000\text{Hz}$）から0.5秒（$4,500,000$ サイクル）および1秒（$9,000,000$ サイクル）を作るには、$\lceil \log_2(9,000,000) \rceil = 24$ ビットのカウンタを用意します。`chisel3.util.log2Ceil` を使うと自動計算できます。
-2. **0.5秒トグルと1秒パルス**: 半周期（`halfPeriod - 1`）と全周期（`fullPeriod - 1`）で `ledReg := !ledReg` と反転させることで0.5秒点灯/0.5秒消灯の綺麗な1Hz点滅波形が得られます。また全周期満了の瞬間に1クロック幅だけ `oneHzPulse := io.en && (cntReg === (fullPeriod - 1).U)` をアサートします。
+2. **0.5秒トグルと1秒パルス**: カウンタ（`cntReg`）の周期巡回論理と、LEDレジスタ（`ledReg`）の反転論理を独立した `when` ブロックに分けて記述します。半周期（`halfPeriod - 1`）と全周期（`fullPeriod - 1`）で `ledReg := !ledReg` と反転させることで0.5秒点灯/0.5秒消灯の綺麗な1Hz点滅波形が得られます。また全周期満了の瞬間に1クロック幅だけ `oneHzPulse := io.en && (cntReg === (fullPeriod - 1).U)` をアサートします。
 
 ### 基本問題2ヒント (`ModuloNCounter`)
 1. **優先度構造**: クロック同期回路の制御論理では、`clear` が最優先、次が `load`、その次が `en` の順序で `when / elsewhen` を構成します。
