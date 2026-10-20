@@ -33,10 +33,10 @@ class OneHzGenerator(val clkFreq: Int = 9000000) extends Module {
   io.oneHzPulse := false.B
 }
 
-object OneHzGeneratorGenerator extends App {
- circt.stage.ChiselStage.emitSystemVerilogFile(
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
   new OneHzGenerator,
   Array("--target-dir", "generated"),
-  Array("--lowering-options=disallowLocalVariables")
+  Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
 )
 }
