@@ -132,6 +132,7 @@ io.rdata := Mux(bypass, io.wdata, rawData)
 
 | 回 | 基本問題（必須 / 45分） | 確認課題（推奨 / 35分） | 重点チェック項目 |
 | :-: | :--- | :--- | :--- |
+| **第0回** | `Andtb` (2入力ANDテスト) | `And.vcd` (Surfer波形解析) | `poke`, `step`, `expect`, `WriteVcdAnnotation` |
 | **第1回** | `HalfAdder`, `FullAdder` | `AdderWithParity4` (加算・パリティ) | 拡張加算 `+&`、縮約XOR `xorR` |
 | **第2回** | `Mux4to1`, `SevenSegDecoder` | `PriorityEncoder4` (`valid` 出力) | `WireDefault`、`io.in.orR` |
 | **第3回** | `ModuloNCounter` (クリア/ロード/en) | `PwmGenerator` (周期/Duty比較) | $N-1$ ラップ、優先度 `clear > load > en` |
