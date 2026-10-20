@@ -65,7 +65,33 @@ style: |
 
 ---
 
-## 3. ターミナルでの開発・検証コマンド一覧
+## 3. テスト処理のカプセル化（ヘルパーメソッドパターン）
+
+テストケースごとに `poke` $\to$ `step` $\to$ `expect` $\to$ `println` をコピペするとコードが肥大化します。
+DUT・入力値・期待値を引数に受け取るヘルパーメソッドを定義することで、テストコードの可読性と保守性を飛躍的に高めることができます。
+
+```scala
+// 1ステップ分のテスト・検証・ログ出力を一括実行するメソッド
+def testStep(dut: And, a: Int, b: Int, expected: Int): Unit = {
+  dut.io.a.poke(a.U)
+  dut.io.b.poke(b.U)
+  dut.clock.step(1)
+
+  val actual = dut.io.out.peekInt().toInt
+  dut.io.out.expect(expected.U)
+
+  val tag = if (actual == expected) "[PASS]" else "[FAIL]"
+  println(f"$tag a=$a, b=$b => out=$actual (expected=$expected)")
+}
+
+// 呼び出し側（真理値表のループ実行）
+val truthTable = Seq((0, 0, 0), (0, 1, 0), (1, 0, 0), (1, 1, 1))
+truthTable.foreach { case (a, b, exp) => testStep(dut, a, b, exp) }
+```
+
+---
+
+## 4. ターミナルでの開発・検証コマンド一覧
 
 | 操作 | 実行コマンド | 備考 |
 | :--- | :--- | :--- |
@@ -77,7 +103,7 @@ style: |
 
 ---
 
-## 4. 波形ビュワー Surfer によるタイミング検証手順
+## 5. 波形ビュワー Surfer によるタイミング検証手順
 
 1. **VCDファイルの読み込み**:
    - `sbt test` を実行後、`surfer test_run_dir/.../And.vcd &` を実行するか、起動した Surfer ウィンドウへ `.vcd` ファイルをドラッグ＆ドロップ。
@@ -88,13 +114,14 @@ style: |
 
 ---
 
-## 5. 本日の演習ガイドライン (Lab00: 90分)
+## 6. 本日の演習ガイドライン (Lab00: 90分)
 
 演習コードは `Lab00/` ディレクトリに配置されています。
 
 ### 必須課題
 1. ターミナルで `Lab00` へ移動し、`sbt test` を実行して `All tests passed.` となることを確認。
-2. 生成された `And.vcd` を `surfer` で開き、4つの入力パターンに対する出力波形を確認。
+2. `Andtb.scala` にヘルパーメソッド `testStep` を実装し、テストコードを整理。
+3. 生成された `And.vcd` を `surfer` で開き、4つの入力パターンに対する出力波形を確認。
 
 ### 発展課題（推奨）
 - `And.scala` の論理を故意に反転・誤記（例: `io.a | io.b`）させ、`sbt test` でエラーメッセージ（`did not equal expected=...`）の出力内容と該当行の特定を体験する。確認後は元の正しい論理に戻すこと。
