@@ -34,5 +34,9 @@ class OneHzGenerator(val clkFreq: Int = 9000000) extends Module {
 }
 
 object OneHzGeneratorGenerator extends App {
-  emitVerilog(new OneHzGenerator(9000000), Array("--target-dir", "generated"))
+ circt.stage.ChiselStage.emitSystemVerilogFile(
+  new OneHzGenerator,
+  Array("--target-dir", "generated"),
+  Array("--lowering-options=disallowLocalVariables")
+)
 }
