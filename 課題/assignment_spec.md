@@ -75,15 +75,17 @@
       - 半周期（`clkFreq / 2`）および全周期（`clkFreq`）満了時に `ledReg` を反転（トグル）。
       - 全周期満了（`cntReg === (clkFreq - 1).U`）かつ `en` 有効時に、`oneHzPulse` を 1 クロックだけ `true.B` にアサート。
 
-### 基本問題2 (必須・目安25分): ロード・イネーブル・同期クリア付き 任意進数カウンタ
+### 基本問題2 (必須・目安25分): 1秒ごとにカウントアップする同期クリア付きモジュロNカウンタ
 - **モジュール名**: `ModuloNCounter(n: Int, width: Int)`
-  - **入力**: `en` (Bool), `clear` (Bool), `load` (Bool), `loadData` (UInt(width.W))
+  - **入力**: `en` (Bool), `clear` (Bool)
   - **出力**: `count` (UInt(width.W)), `rollover` (Bool)
   - **論理仕様**:
-    - 優先度: `clear` (最優先) $\to$ `load` $\to$ `en`。
+    - `OneHzGenerator` の `oneHzPulse`（1Hzパルス）を `en` 入力に接続することで、1秒ごとに 1 カウントアップする時計用モジュロカウンタの基幹要素。
+    - 優先度: `clear` (最優先) $\to$ `en`。
     - `clear`: 次クロックで `count` を 0 にリセット。
-    - `load`: 次クロックで `loadData` をレジスタに格納（ただし $n$ 未満にクリップ）。
     - `en`: カウント動作。`count === (n - 1).U` の時、`rollover` を 1 クロックだけ `true.B` にし、次クロックで 0 へ復帰。それ以外は `count + 1.U`。
+    - `en` が `false.B` の時は現在の値を保持し、`rollover` も `false.B`。
+    - **設計原則**: カウンタ更新論理（`when(io.clear) ...`）と出力論理（`io.count`, `io.rollover`）を明確に分離して記述すること。
 
 ### 確認課題 (目安30分): デューティ比可変 PWM パルス発生器
 - **モジュール名**: `PwmGenerator(periodMax: Int = 255)`

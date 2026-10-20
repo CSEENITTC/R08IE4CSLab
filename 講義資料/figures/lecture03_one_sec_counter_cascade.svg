@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 250" width="100%" height="100%">
+  <defs>
+    <style>
+      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #1e293b; }
+      .bold-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: bold; fill: #0f172a; }
+      .wire-label { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 12px; font-weight: bold; }
+      .sub-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 11px; fill: #64748b; }
+      .wire-pulse { stroke: #d97706; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+      .wire-clk { stroke: #dc2626; stroke-width: 2; fill: none; stroke-linecap: round; stroke-dasharray: 4,3; }
+      .wire-data { stroke: #2563eb; stroke-width: 2.2; fill: none; stroke-linecap: round; }
+      .shadow { filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.06)); }
+    </style>
+    <marker id="arrow-pulse" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrow-clk" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626"/>
+    </marker>
+    <marker id="arrow-data" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+
+  <!-- Background Canvas -->
+  <rect x="10" y="10" width="700" height="230" rx="14" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- Module 1: OneHzGenerator -->
+  <g class="shadow" transform="translate(40, 45)">
+    <rect x="0" y="0" width="230" height="130" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+    <rect x="0" y="0" width="230" height="32" rx="10" fill="#eff6ff"/>
+    <text x="115" y="22" text-anchor="middle" class="bold-label" fill="#1e40af">OneHzGenerator</text>
+    <text x="115" y="55" text-anchor="middle" class="sub-label" fill="#64748b">9MHz分周カウンタ</text>
+    <text x="115" y="75" text-anchor="middle" class="sub-label" fill="#64748b">0.5秒反転 / 1秒ストローブ</text>
+
+    <!-- Out pins -->
+    <text x="218" y="100" text-anchor="end" class="wire-label" fill="#16a34a">io.ledBlink</text>
+    <text x="218" y="120" text-anchor="end" class="wire-label" fill="#d97706">io.oneHzPulse</text>
+  </g>
+
+  <!-- ledBlink Output wire -->
+  <path d="M 270, 145 L 320, 145" class="wire-data" stroke="#16a34a" marker-end="url(#arrow-data)"/>
+  <text x="325" y="149" class="wire-label" fill="#16a34a">LED点滅 (0.5s反転)</text>
+
+  <!-- Pulse wire: OneHzGenerator.oneHzPulse -> ModuloNCounter.en -->
+  <path d="M 270, 165 L 430, 165" class="wire-pulse" marker-end="url(#arrow-pulse)"/>
+  <text x="350" y="183" text-anchor="middle" class="wire-label" fill="#d97706">1Hzパルス (1サイクル幅)</text>
+
+  <!-- Module 2: ModuloNCounter (n=10) -->
+  <g class="shadow" transform="translate(430, 45)">
+    <rect x="0" y="0" width="240" height="130" rx="10" fill="#ffffff" stroke="#16a34a" stroke-width="2"/>
+    <rect x="0" y="0" width="240" height="32" rx="10" fill="#ecfdf5"/>
+    <text x="120" y="22" text-anchor="middle" class="bold-label" fill="#065f46">ModuloNCounter (n=10)</text>
+    <text x="120" y="55" text-anchor="middle" class="sub-label" fill="#64748b">1秒ごとにカウントアップ</text>
+
+    <!-- In pin -->
+    <text x="10" y="120" text-anchor="start" class="wire-label" fill="#d97706">io.en</text>
+    <!-- Out pins -->
+    <text x="228" y="100" text-anchor="end" class="wire-label" fill="#2563eb">io.count (0〜9秒)</text>
+    <text x="228" y="120" text-anchor="end" class="wire-label" fill="#7c3aed">io.rollover</text>
+  </g>
+
+  <!-- ModuloNCounter output wires -->
+  <path d="M 670, 145 L 700, 145" class="wire-data" marker-end="url(#arrow-data)"/>
+  <path d="M 670, 165 L 700, 165" class="wire-data" stroke="#7c3aed" marker-end="url(#arrow-data)"/>
+
+  <!-- Common Clock Wire (Single Clock Domain) -->
+  <path d="M 30, 25 L 155, 25 L 155, 45" class="wire-clk" marker-end="url(#arrow-clk)"/>
+  <path d="M 155, 25 L 550, 25 L 550, 45" class="wire-clk" marker-end="url(#arrow-clk)"/>
+  <text x="35" y="20" class="wire-label" fill="#dc2626">共通 9MHz システムクロック (暗黙配線: clock)</text>
+
+  <!-- Note Footer -->
+  <text x="360" y="222" text-anchor="middle" class="sub-label" font-weight="bold" fill="#334155">
+    完全同期設計: 高速クロック（9MHz）を共有し、低周波パルス（oneHzPulse）を同期イネーブルとして渡す
+  </text>
+</svg>

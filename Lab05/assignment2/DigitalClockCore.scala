@@ -1,20 +1,16 @@
 import chisel3._
 
-// 任意進数カウンタ (ヘルパーモジュール)
+// 任意進数カウンタ (ヘルパーモジュール: load信号を排除した同期クリア付きモジュロNカウンタ)
 class ModuloNCounter(val n: Int, val width: Int) extends Module {
   val io = IO(new Bundle {
     val en       = Input(Bool())
     val clear    = Input(Bool())
-    val load     = Input(Bool())
-    val loadData = Input(UInt(width.W))
     val count    = Output(UInt(width.W))
     val rollover = Output(Bool())
   })
   val cntReg = RegInit(0.U(width.W))
   when(io.clear) {
     cntReg := 0.U
-  }.elsewhen(io.load) {
-    cntReg := Mux(io.loadData < n.U, io.loadData, 0.U)
   }.elsewhen(io.en) {
     when(cntReg === (n - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
   }
