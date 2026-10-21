@@ -103,7 +103,33 @@
 
 ## 第4回: RingカウンタとJohnsonカウンタ (Ring & Johnson Counters)
 
-### 基本問題 (必須・目安45分): 自己復帰回路付き 4ビットRing & Johnsonカウンタ
+### 実機実装課題 (必須・目安35分): FPGA (TeCボード) 配線と動作確認
+前回のカウンタ回路を実機TeCボードに書き込んで動作確認を行う。**今回の出力は負論理（0で点灯）のままで良い。**
+
+#### 課題1: 1Hz生成回路の実機配線 (`OneHzGenerator`)
+- **TeCボードとの配線仕様**:
+  - `clock` $\to$ `CLK_IN` (`P55`)
+  - 入力 `en` $\to$ `RUN_SW` (`P16` | PULLUP)
+  - 入力 `clear` $\to$ `RESET_SW` (`P120` | PULLUP)
+  - 出力 `ledBlink` $\to$ `RUN_LED` (`P43`)
+  - 出力 `oneHzPulse` $\to$ `C_LED` (`P46`)
+- **動作確認**:
+  - `RUN_SW` をオンにすると、`RUN_LED` が1Hz（0.5秒点灯 / 0.5秒消灯）で点滅動作を行う。
+  - 1秒に1回、`C_LED` が1クロック幅だけ一瞬点灯（ストローブパルス）する。
+  - `RESET_SW` 押下でカウンタが同期クリアされ、`RUN_LED` が消灯初期化される。
+
+#### 課題2: モジュロNカウンタの実機配線 (`ModuloNCounter`)
+- **TeCボードとの配線仕様**:
+  - `clock` $\to$ `CLK_IN` (`P55`)
+  - 入力 `en` $\to$ `RUN_SW` (`P16` | PULLUP)
+  - 入力 `clear` $\to$ `RESET_SW` (`P120` | PULLUP)
+  - 出力 `count[3:0]` $\to$ `DATA_LED[3:0]` (`P62, P61, P59, P58`)
+  - 出力 `runLED` $\to$ `RUN_LED` (`P43`)
+- **動作確認**:
+  - `RUN_SW` をオンにすると `RUN_LED` が点滅しながら、`DATA_LED` が1秒ごとに $0 \to 1 \to \dots \to 9 \to 0$ とカウントアップする。
+  - `RESET_SW` 押下でカウント値が0クリアされ、全桁消灯（値0）に戻る。
+
+### 設計問題 (必須・目安35分): 自己復帰回路付き 4ビットRing & Johnsonカウンタ
 - **モジュール名**: `SelfCorrectingRingCounter(width: Int = 4)`
   - **入力**: `en` (Bool)
   - **出力**: `out` (UInt(width.W))
@@ -117,7 +143,7 @@
     - リセット時: `0.U(width.W)`。
     - 最上位ビットの反転 `~out(width - 1)` を最下位ビットに結合し、左シフト。$2 \times width$ 個のユニークな状態を巡回。
 
-### 発展問題 (推奨・目安35分): 4ビット・グレイコード・カウンタ
+### 発展問題 (推奨・目安20分): 4ビット・グレイコード・カウンタ
 - **モジュール名**: `GrayCodeCounter`
   - **入力**: `en` (Bool), `clear` (Bool)
   - **出力**: `gray` (UInt(4.W)), `bin` (UInt(4.W))

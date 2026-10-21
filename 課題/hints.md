@@ -57,6 +57,21 @@
 
 ## 第4回: RingカウンタとJohnsonカウンタ
 
+### 実機実装課題ヒント（課題1 & 課題2: TeCボード配線）
+1. **負論理LED駆動**:
+   - TeCボード上のLED（`RUN_LED`, `C_LED`, `DATA_LED`）はカソードコモン/アノード給電方式等のため、FPGAの出力端子が `Low` (0) のときに電流が流れて点灯する**負論理仕様**です。
+   - 回路側の出力は負論理出力のまま配線して問題ありません（`ModuloNCounter` で記述した `~modReg` や `~ledReg` により、正論理の数値・状態がそのままLEDの点灯として直感的に表示されます）。
+2. **課題1 (`OneHzGenerator`) 配線の要点**:
+   - 入力: `io_en` を `RUN_SW` (`P16` | PULLUP)、`io_clear` を `RESET_SW` (`P120` | PULLUP) に接続します。
+   - 出力: `io_ledBlink` を `RUN_LED` (`P43`)、`io_oneHzPulse` を `C_LED` (`P46`) に接続します。
+   - クロック: `clock` を `CLK_IN` (`P55`) に接続します。
+   - `RUN_SW` をオンにすると `RUN_LED` が0.5秒点灯/0.5秒消灯の1Hz周期で点滅し、1秒に1回 `C_LED` が一瞬パルス点灯します。
+3. **課題2 (`ModuloNCounter`) 配線の要点**:
+   - 入力: `io_en` を `RUN_SW` (`P16` | PULLUP)、`io_clear` を `RESET_SW` (`P120` | PULLUP) に接続します。
+   - 出力: `io_count[3:0]` を `DATA_LED[3:0]` (`P62, P61, P59, P58`)、`io_runLED` を `RUN_LED` (`P43`) に接続します。
+   - クロック: `clock` を `CLK_IN` (`P55`) に接続します。
+   - `RUN_SW` をオンにすると `RUN_LED` が点滅しながら、`DATA_LED` が1秒ごとに $0 \to 1 \to \dots \to 9$ とバイナリカウントアップ表示されます。
+
 ### 基本問題ヒント (`SelfCorrectingRingCounter`, `JohnsonCounter`)
 1. **1-hot判定と復帰**: 4ビットRingカウンタの正常状態は `0001`, `0010`, `0100`, `1000` の4つのみです。立っているビット数を数える `PopCount(out) === 1.U` を判定論理に用いることで、万が一外乱やノイズで多重ビットが立ったり全ゼロになった場合でも、次クロックで `0001.U` に復帰させることができます。
 2. **Johnsonカウンタの帰還**: 最上位ビット `out(width-1)` を取り出し、それを反転した信号 `~out(width-1)` を下位ビット `out(width-2, 0)` と結合（`Cat(out(width-2, 0), ~out(width-1))`）して次状態レジスタへ入力します。
