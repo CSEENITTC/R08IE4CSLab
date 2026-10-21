@@ -16,6 +16,10 @@ class GrayCodeCounter extends Module {
   io.bin  := binReg
 }
 
-object GrayCodeCounterGenerator extends App {
-  emitVerilog(new GrayCodeCounter, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new GrayCodeCounter,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

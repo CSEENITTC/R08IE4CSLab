@@ -22,6 +22,10 @@ class PriorityEncoder4 extends Module {
   io.valid := false.B
 }
 
-object PriorityEncoder4Generator extends App {
-  emitVerilog(new PriorityEncoder4, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new PriorityEncoder4,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

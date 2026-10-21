@@ -15,6 +15,10 @@ class Mux4to1 extends Module {
   io.out := 0.U
 }
 
-object Mux4to1Generator extends App {
-  emitVerilog(new Mux4to1, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new Mux4to1,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

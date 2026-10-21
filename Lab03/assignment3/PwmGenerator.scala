@@ -18,6 +18,10 @@ class PwmGenerator(val periodMax: Int = 255) extends Module {
   io.pwmOut := false.B
 }
 
-object PwmGeneratorGenerator extends App {
-  emitVerilog(new PwmGenerator(255), Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new PwmGenerator,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

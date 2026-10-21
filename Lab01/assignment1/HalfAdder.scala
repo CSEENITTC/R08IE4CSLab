@@ -19,5 +19,9 @@ class HalfAdder extends Module {
   io.cout := io.a & io.b
 }
 object VerilogGenerator extends App {
-    emitVerilog(new HalfAdder, Array("--target-dir", "generated"))
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new HalfAdder,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

@@ -35,6 +35,10 @@ class BypassedRegisterFile extends Module {
   io.rdata2 := 0.U
 }
 
-object BypassedRegisterFileGenerator extends App {
-  emitVerilog(new BypassedRegisterFile, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new BypassedRegisterFile,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

@@ -19,5 +19,9 @@ class FullAdder extends Module {
   io.cout := io.a & io.b | (io.a | io.b) & io.cin
 }
 object VerilogGenerator extends App {
-    emitVerilog(new FullAdder, Array("--target-dir", "generated"))
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new FullAdder,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

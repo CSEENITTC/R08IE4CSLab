@@ -17,6 +17,10 @@ class SequenceDetector101 extends Module {
   io.detected := false.B
 }
 
-object SequenceDetector101Generator extends App {
-  emitVerilog(new SequenceDetector101, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new SequenceDetector101,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

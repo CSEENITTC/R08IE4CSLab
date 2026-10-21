@@ -19,5 +19,9 @@ class AdderWithParity4 extends Module {
   io.parity := result(3,0).xorR
 }
 object VerilogGenerator extends App {
-    emitVerilog(new AdderWithParity4, Array("--target-dir", "generated"))
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new AdderWithParity4,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

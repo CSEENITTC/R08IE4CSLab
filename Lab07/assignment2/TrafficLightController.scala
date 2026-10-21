@@ -20,6 +20,10 @@ class TrafficLightController extends Module {
   io.pedLight  := false.B
 }
 
-object TrafficLightControllerGenerator extends App {
-  emitVerilog(new TrafficLightController, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new TrafficLightController,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

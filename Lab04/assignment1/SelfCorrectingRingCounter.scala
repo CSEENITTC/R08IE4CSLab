@@ -16,6 +16,10 @@ class SelfCorrectingRingCounter(val width: Int = 4) extends Module {
   io.out := state
 }
 
-object SelfCorrectingRingCounterGenerator extends App {
-  emitVerilog(new SelfCorrectingRingCounter(4), Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new SelfCorrectingRingCounter,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

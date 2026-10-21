@@ -19,6 +19,10 @@ class RegisterFile8x8 extends Module {
   io.rdata2 := 0.U
 }
 
-object RegisterFile8x8Generator extends App {
-  emitVerilog(new RegisterFile8x8, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new RegisterFile8x8,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

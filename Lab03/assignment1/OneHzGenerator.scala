@@ -30,13 +30,12 @@ class OneHzGenerator(val clkFreq: Int = 9000000) extends Module {
   //   - cntReg が fullPeriod - 1 かつ en が有効なとき、oneHzPulse を 1 クロックだけ true.B にアサート
 
   io.ledBlink   := ledReg
-  io.oneHzPulse := false.B
 }
 
 object VerilogGenerator extends App {
   _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
-  new OneHzGenerator,
-  Array("--target-dir", "generated"),
-  Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
-)
+    new OneHzGenerator,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

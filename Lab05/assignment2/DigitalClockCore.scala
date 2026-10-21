@@ -34,6 +34,10 @@ class DigitalClockCore extends Module {
   io.hour := 0.U
 }
 
-object DigitalClockCoreGenerator extends App {
-  emitVerilog(new DigitalClockCore, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new DigitalClockCore,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

@@ -44,6 +44,10 @@ class StructuredALU extends Module {
   io.carryOut := false.B
 }
 
-object StructuredALUGenerator extends App {
-  emitVerilog(new StructuredALU, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new StructuredALU,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

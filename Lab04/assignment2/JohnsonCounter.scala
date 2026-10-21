@@ -15,6 +15,10 @@ class JohnsonCounter(val width: Int = 4) extends Module {
   io.out := state
 }
 
-object JohnsonCounterGenerator extends App {
-  emitVerilog(new JohnsonCounter(4), Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new JohnsonCounter,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

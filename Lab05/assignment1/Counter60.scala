@@ -35,6 +35,10 @@ class Counter60 extends Module {
   io.cout     := false.B
 }
 
-object Counter60Generator extends App {
-  emitVerilog(new Counter60, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new Counter60,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }

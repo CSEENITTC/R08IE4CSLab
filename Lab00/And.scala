@@ -7,6 +7,10 @@ class And extends Module {
     })
     io.out := io.a & io.b
 }
-object AndGateGenerator extends App {
-    emitVerilog(new And, Array("--target-dir", "generated"))
+object VerilogGenerator extends App {
+  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+    new And,
+    Array("--target-dir", "generated"),
+    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+  )
 }
