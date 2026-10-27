@@ -104,12 +104,16 @@
 
 ### 確認課題 (目安30分): デューティ比可変 PWM パルス発生器
 - **モジュール名**: `PwmGenerator(periodMax: Int = 255)`
-  - **入力**: `period` (UInt(8.W)), `duty` (UInt(8.W)), `en` (Bool)
-  - **出力**: `pwmOut` (Bool)
+  - **パラメータ**: `periodMax` (Int: カウンタのハードウェア最大上限値、デフォルト `255`)
+  - **入力**:
+    - `period` (UInt(8.W)): **周期カウンタの上限値**。内部カウンタ `cntReg` は `0` から `period` までカウントして `0` に戻るため、**1周期の長さは `period + 1` クロック**となる（例: `period = 4` のとき `0, 1, 2, 3, 4` の5クロック周期）。
+    - `duty` (UInt(8.W)): **1周期のうち出力を High (`true.B`) にするクロック数（比較閾値）**。`cntReg < duty` の期間だけ High を出力する（例: `period = 4, duty = 2` のとき `cntReg = 0, 1` の2クロック間 High でデューティ比 $2/5 = 40\%$）。
+    - `en` (Bool): **動作イネーブル信号**。`true.B` のときカウントおよびPWM出力を行い、`false.B` のときはカウンタを `0` にリセットして出力を `false.B` に固定する。
+  - **出力**: `pwmOut` (Bool: PWMパルス波形出力)
   - **論理仕様**:
-    - 周期カウンタ (`cnt`) が `0` から `period` までカウントアップ。
-    - `cnt < duty` の期間中、`pwmOut` は `true.B` を出力し、`cnt >= duty` の期間は `false.B` を出力。
-    - `en === false.B` の時はカウンタを停止し、出力は `false.B`。
+    - `en === true.B` のとき、周期カウンタ (`cntReg`) は毎クロック `0` から `period` までカウントアップし、`cntReg >= period`（または `cntReg >= periodMax.U`）に達したら次クロックで `0` に戻る。
+    - `en === true.B` かつ `cntReg < duty`（かつ `duty > 0.U`）の期間中、`pwmOut` に `true.B` を出力し、それ以外は `false.B` を出力。
+    - `en === false.B` の時は `cntReg` を `0.U` にリセットし、`pwmOut` は直ちに `false.B` とする。
 
 ---
 

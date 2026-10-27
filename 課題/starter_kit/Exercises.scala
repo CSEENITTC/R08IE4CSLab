@@ -149,12 +149,15 @@ class ModuloNCounter(val n: Int = 10, val width: Int = 4, val clkFreq: Int = 900
 }
 
 // 発展問題: プログラマブルPWMパルス発生器
+// - io.period: 周期カウンタの上限値 (cntReg は 0 〜 period を巡回するため、1周期は period + 1 クロック)
+// - io.duty  : 1周期のうち High (true.B) を出力するクロック数 (cntReg < duty の期間だけ High)
+// - io.en    : 動作イネーブル (true.B でカウント＆PWM出力、false.B でカウンタ0リセット＆出力 false.B)
 class PwmGenerator(val periodMax: Int = 255) extends Module {
   val io = IO(new Bundle {
-    val period = Input(UInt(8.W))
-    val duty   = Input(UInt(8.W))
-    val en     = Input(Bool())
-    val pwmOut = Output(Bool())
+    val period = Input(UInt(8.W)) // カウンタ上限値 (1周期 = period + 1 クロック)
+    val duty   = Input(UInt(8.W)) // High出力クロック数 (cntReg < duty の間 High)
+    val en     = Input(Bool())    // 動作イネーブル
+    val pwmOut = Output(Bool())   // PWM出力
   })
 
   val cntReg = RegInit(0.U(8.W))

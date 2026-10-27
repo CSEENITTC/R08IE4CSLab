@@ -65,8 +65,13 @@
 4. **カウンタ更新と出力論理の分離**: レジスタの更新条件（`cntReg`, `modReg`, `ledReg` の書き換え）と、出力ポートへのドライブ（`io.runLED := ~ledReg`, `io.count := ~modReg`）を明確に分けて記述してください。負論理 `~` の反転を忘れずに適用します。
 
 ### 確認課題ヒント (`PwmGenerator`)
-1. **比較器の出力タイミング**: カウンタが周期値 `period` に達したら自動で0にクリアし、同時に現在のカウント値と `duty` を大小比較 (`cnt < duty`) します。
-2. **デューティ比100%と0%**: `duty === 0.U` のときは常にLow、`duty > period` のときは常にHighになるようなエッジケースの挙動を意識して比較論理を設計してください。
+1. **各入力信号の意味**:
+   - `io.period`: カウンタ `cntReg` がどこまで数えたら `0` に戻るかを表す**カウント上限値**です。`0` から `period` まで数えるため、**1周期は `period + 1` クロック**になります（例: `period = 4` なら `0, 1, 2, 3, 4` の5クロック周期）。
+   - `io.duty`: 1周期のうち**何クロック間だけ `pwmOut` を High (`true.B`) にするか**を表す閾値です。`cntReg < io.duty` の間だけ High になります（例: `duty = 2` なら `cntReg` が `0` と `1` の2クロック間だけ High）。
+   - `io.en`: 回路全体の動作許可信号です。`false.B` のときはカウンタを `0.U` に戻し、出力 `pwmOut` も `false.B` に強制遮断します。
+2. **周期カウンタと比較器の記述パターン**:
+   - `when(io.en)` の中で、`cntReg >= io.period || cntReg >= periodMax.U` なら `cntReg := 0.U`、それ以外は `cntReg := cntReg + 1.U` と更新します（`otherwise` では `cntReg := 0.U`）。
+   - 出力は `io.pwmOut := io.en && (cntReg < io.duty) && (io.duty > 0.U)` と記述することで、`duty === 0.U`（0%消灯）や `duty > period`（100%常時点灯）、`en === false.B`（安全停止）のすべての境界ケースを1行で正確に満たせます。
 
 ---
 
