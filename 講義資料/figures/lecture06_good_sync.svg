@@ -1,33 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 740 160" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 165" width="100%" height="100%">
   <style>
-    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 13px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
     .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #475569; text-anchor: middle; }
     .label { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 600; fill: #1e293b; }
     .wire-label { font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 11px; fill: #2563eb; font-weight: 600; }
     .wire { stroke: #2563eb; stroke-width: 2; fill: none; }
-    .wire-subtle { stroke: #64748b; stroke-width: 1.5; fill: none; }
     .wire-clk { stroke: #0284c7; stroke-width: 1.5; stroke-dasharray: 4,3; fill: none; }
-    .feedback-wire { stroke: #2563eb; stroke-width: 2.2; fill: none; }
-    .box-comb { fill: #eff6ff; stroke: #3b82f6; stroke-width: 1.8; rx: 8; filter: url(#shadow); }
     .box-seq { fill: #f0fdf4; stroke: #22c55e; stroke-width: 1.8; rx: 6; filter: url(#shadow); }
-    .box-ctrl { fill: #faf5ff; stroke: #a855f7; stroke-width: 1.8; rx: 8; filter: url(#shadow); }
-    .box-mem { fill: #fff7ed; stroke: #f97316; stroke-width: 1.8; rx: 8; filter: url(#shadow); }
-    .box-bad { fill: #fef2f2; stroke: #ef4444; stroke-width: 1.8; rx: 8; }
-    .gate { fill: #ffffff; stroke: #1e40af; stroke-width: 1.8; }
+    .box-mem { fill: #fff7ed; stroke: #f97316; stroke-width: 1.8; rx: 6; filter: url(#shadow); }
   </style>
 
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e40af"/>
-    </marker>
-    <marker id="arrow-subtle" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 2 L 7 5 L 0 8 z" fill="#475569"/>
-    </marker>
-    <marker id="arrow-red" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626"/>
-    </marker>
-    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#16a34a"/>
     </marker>
     <filter id="shadow" x="-3%" y="-6%" width="106%" height="116%" filterUnits="userSpaceOnUse">
       <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.06"/>
@@ -35,31 +20,50 @@
   </defs>
 
   <!-- Background plate -->
-  <rect width="740" height="160" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.2"/>
+  <rect width="760" height="165" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.2"/>
 
-  <text x="20" y="35" class="wire-label" style="fill:#0284c7;">System Clock (完全同期)</text>
-  <line x1="180" y1="30" x2="600" y2="30" class="wire-clk"/>
-  <circle cx="250" cy="30" r="3.5" fill="#0284c7"/>
-  <line x1="250" y1="30" x2="250" y2="60" class="wire-clk" marker-end="url(#arrow)"/>
-  <circle cx="530" cy="30" r="3.5" fill="#0284c7"/>
-  <line x1="530" y1="30" x2="530" y2="60" class="wire-clk" marker-end="url(#arrow)"/>
+  <!-- Shared System Clock -->
+  <text x="20" y="32" class="wire-label" style="fill:#0284c7;">System Clock (全モジュール共通)</text>
+  <line x1="210" y1="28" x2="585" y2="28" class="wire-clk"/>
+  <circle cx="135" cy="28" r="3.5" fill="#0284c7"/>
+  <line x1="135" y1="28" x2="210" y2="28" class="wire-clk"/>
+  <line x1="135" y1="28" x2="135" y2="62" class="wire-clk" marker-end="url(#arrow)"/>
+  <circle cx="360" cy="28" r="3.5" fill="#0284c7"/>
+  <line x1="360" y1="28" x2="360" y2="62" class="wire-clk" marker-end="url(#arrow)"/>
+  <circle cx="585" cy="28" r="3.5" fill="#0284c7"/>
+  <line x1="585" y1="28" x2="585" y2="62" class="wire-clk" marker-end="url(#arrow)"/>
 
-  <text x="20" y="95" class="wire-label">en (1秒パルス)</text>
-  <line x1="110" y1="90" x2="170" y2="90" class="wire" marker-end="url(#arrow)"/>
+  <!-- External enable -->
+  <text x="18" y="98" class="wire-label">io.en</text>
+  <line x1="52" y1="94" x2="70" y2="94" class="wire" marker-end="url(#arrow)"/>
 
-  <rect x="170" y="60" width="150" height="60" class="box-seq"/>
-  <text x="245" y="88" class="title" style="fill:#166534;">10進カウンタ</text>
-  <text x="245" y="106" class="subtitle">(0 〜 9)</text>
+  <!-- Module 1: OneHzGenerator -->
+  <rect x="70" y="64" width="135" height="60" class="box-mem"/>
+  <text x="137" y="90" class="title" style="fill:#9a3412;">1Hz生成モジュール</text>
+  <text x="137" y="108" class="subtitle">OneHzGenerator</text>
 
-  <line x1="320" y1="90" x2="450" y2="90" class="wire" marker-end="url(#arrow)"/>
-  <rect x="340" y="78" width="80" height="24" fill="#ffffff" rx="4" stroke="#bfdbfe"/>
-  <text x="380" y="94" class="wire-label" text-anchor="middle">rollover10</text>
+  <!-- Enable 1: oneHzPulse -->
+  <line x1="205" y1="94" x2="290" y2="94" class="wire" marker-end="url(#arrow)"/>
+  <text x="247" y="84" class="wire-label" text-anchor="middle">oneHzPulse</text>
+  <text x="247" y="112" class="subtitle" text-anchor="middle">(→ u10.io.en)</text>
 
-  <rect x="450" y="60" width="150" height="60" class="box-seq"/>
-  <text x="525" y="88" class="title" style="fill:#166534;">6進カウンタ</text>
-  <text x="525" y="106" class="subtitle">(0 〜 5)</text>
+  <!-- Module 2: 10進カウンタ -->
+  <rect x="290" y="64" width="140" height="60" class="box-seq"/>
+  <text x="360" y="90" class="title" style="fill:#166534;">10進カウンタ</text>
+  <text x="360" y="108" class="subtitle">1の位 (0 〜 9)</text>
 
-  <line x1="600" y1="90" x2="680" y2="90" class="wire" marker-end="url(#arrow)"/>
-  <text x="685" y="95" class="label">cout (分へ)</text>
+  <!-- Enable 2: rollover10 -->
+  <line x1="430" y1="94" x2="515" y2="94" class="wire" marker-end="url(#arrow)"/>
+  <text x="472" y="84" class="wire-label" text-anchor="middle">rollover10</text>
+  <text x="472" y="112" class="subtitle" text-anchor="middle">(→ u6.io.en)</text>
+
+  <!-- Module 3: 6進カウンタ -->
+  <rect x="515" y="64" width="140" height="60" class="box-seq"/>
+  <text x="585" y="90" class="title" style="fill:#166534;">6進カウンタ</text>
+  <text x="585" y="108" class="subtitle">10の位 (0 〜 5)</text>
+
+  <!-- Final cout -->
+  <line x1="655" y1="94" x2="700" y2="94" class="wire" marker-end="url(#arrow)"/>
+  <text x="705" y="98" class="label">cout</text>
 
 </svg>

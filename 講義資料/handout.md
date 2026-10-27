@@ -136,7 +136,7 @@ io.rdata := Mux(bypass, io.wdata, rawData)
 | **第2回** | `Mux4to1`, `SevenSegDecoder` | `PriorityEncoder4` (`valid` 出力) | `WireDefault`、`io.in.orR` |
 | **第3回** | `ModuloNCounter` (クリア/ロード/en) | `PwmGenerator` (周期/Duty比較) | $N-1$ ラップ、優先度 `clear > load > en` |
 | **第4回** | `RingCounter`, `JohnsonCounter` | `GrayCodeCounter` (ハミング距離1) | 1-hot初期値 `1.U`、反転帰還 `~state(3)` |
-| **第5回** | `Counter60` (10進×6進カスケード) | `DigitalClockCore` (24時間時計) | **リップルクロック厳禁**、`cout` $\to$ `en` |
+| **第5回** | `Counter60` (1Hz生成+10進+6進階層化) | `DigitalClockCore` (24時間時計) | **リップルクロック厳禁**、`oneHzPulse`/`rollover` $\to$ `en` |
 | **第6回** | `StructuredALU` (算術/論理統合) | `PipelinedALUWithFlags` (パイプライン) | `Module(new ...)`、`RegNext` 遅延同期 |
 | **第7回** | `SequenceDetector101` (Moore型) | `TrafficLightController` (タイマ連動) | `ChiselEnum`、重複 "10101" 検出 |
 | **第8回** | `RegisterFile8x8` (2R1W 非同期) | `BypassedRegisterFile` (RAWバイパス) | 同一サイクルでの `waddr === raddr` バイパス |

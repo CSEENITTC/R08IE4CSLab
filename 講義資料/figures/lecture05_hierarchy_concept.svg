@@ -1,77 +1,81 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" width="100%" height="100%">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 280" width="100%" height="100%">
   <defs>
     <style>
-      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; fill: #1e293b; }
-      .bold-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: bold; fill: #0f172a; }
+      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px; fill: #1e293b; }
+      .bold-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: bold; fill: #0f172a; }
       .title-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 15px; font-weight: bold; fill: #1e40af; }
-      .wire-label { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 11px; fill: #475569; }
-      .wire { stroke: #2563eb; stroke-width: 2.5; fill: none; stroke-linecap: round; stroke-linejoin: round; }
-      .ctrl-wire { stroke: #d97706; stroke-width: 2; fill: none; stroke-linecap: round; stroke-dasharray: 4,4; }
-      .port { fill: #2563eb; stroke: #ffffff; stroke-width: 2; }
+      .wire-label { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 11px; fill: #2563eb; font-weight: 600; }
+      .wire { stroke: #2563eb; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+      .port { fill: #2563eb; stroke: #ffffff; stroke-width: 1.5; }
       .shadow { filter: drop-shadow(0px 3px 6px rgba(0, 0, 0, 0.06)); }
     </style>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
       <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
     </marker>
-    <marker id="arrow-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706"/>
-    </marker>
     <linearGradient id="topBg" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%" stop-color="#eff6ff" stop-opacity="0.6"/>
       <stop offset="100%" stop-color="#f8fafc" stop-opacity="0.9"/>
     </linearGradient>
-    <linearGradient id="subBgA" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="subBg1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fef3c7"/>
+    </linearGradient>
+    <linearGradient id="subBg2" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
       <stop offset="100%" stop-color="#e0f2fe"/>
     </linearGradient>
-    <linearGradient id="subBgB" x1="0" y1="0" x2="1" y2="1">
+    <linearGradient id="subBg3" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#f0fdf4"/>
+      <stop offset="100%" stop-color="#dcfce7"/>
     </linearGradient>
   </defs>
 
   <!-- Top Module Boundary -->
-  <rect x="20" y="20" width="680" height="280" rx="16" fill="url(#topBg)" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,4"/>
-  <text x="40" y="48" class="title-label">TopModule (階層親モジュール)</text>
+  <rect x="20" y="15" width="720" height="245" rx="14" fill="url(#topBg)" stroke="#3b82f6" stroke-width="2" stroke-dasharray="6,4"/>
+  <text x="40" y="42" class="title-label">Counter60 (階層親モジュール / TopModule)</text>
 
-  <!-- SubModule A -->
+  <!-- External Input -->
+  <text x="32" y="108" class="wire-label">io.en, io.clear</text>
+  <line x1="35" y1="120" x2="75" y2="120" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- SubModule 1: OneHzGenerator -->
   <g class="shadow">
-    <rect x="80" y="80" width="220" height="110" rx="10" fill="url(#subBgA)" stroke="#0284c7" stroke-width="2"/>
-    <text x="190" y="115" text-anchor="middle" class="bold-label" fill="#0369a1">SubModule A</text>
-    <text x="190" y="140" text-anchor="middle" class="label" fill="#475569">Logic Unit (論理演算)</text>
-    <text x="190" y="165" text-anchor="middle" class="wire-label">io.out_logic</text>
+    <rect x="75" y="70" width="175" height="100" rx="10" fill="url(#subBg1)" stroke="#d97706" stroke-width="2"/>
+    <text x="162" y="98" text-anchor="middle" class="bold-label" fill="#b45309">OneHzGenerator</text>
+    <text x="162" y="120" text-anchor="middle" class="label" fill="#475569">1Hzのen信号生成</text>
+    <text x="162" y="145" text-anchor="middle" class="wire-label" fill="#b45309">io.oneHzPulse</text>
   </g>
 
-  <!-- SubModule B -->
+  <!-- Wire: OneHzGenerator -> 10進カウンタ -->
+  <line x1="250" y1="120" x2="310" y2="120" class="wire" marker-end="url(#arrow)"/>
+  <text x="280" y="110" text-anchor="middle" class="wire-label">1Hz en</text>
+
+  <!-- SubModule 2: 10進カウンタ -->
   <g class="shadow">
-    <rect x="420" y="80" width="220" height="110" rx="10" fill="url(#subBgB)" stroke="#16a34a" stroke-width="2"/>
-    <text x="530" y="115" text-anchor="middle" class="bold-label" fill="#15803d">SubModule B</text>
-    <text x="530" y="140" text-anchor="middle" class="label" fill="#475569">Arith Unit (算術演算)</text>
-    <text x="530" y="165" text-anchor="middle" class="wire-label">io.out_arith</text>
+    <rect x="310" y="70" width="175" height="100" rx="10" fill="url(#subBg2)" stroke="#0284c7" stroke-width="2"/>
+    <text x="397" y="98" text-anchor="middle" class="bold-label" fill="#0369a1">10進カウンタ (u10)</text>
+    <text x="397" y="120" text-anchor="middle" class="label" fill="#475569">ModuloNCounter(10, 4)</text>
+    <text x="397" y="145" text-anchor="middle" class="wire-label">1の位 (0〜9)</text>
   </g>
 
-  <!-- MUX Unit -->
-  <g class="shadow" transform="translate(325, 210)">
-    <polygon points="0,0 70,0 55,50 15,50" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
-    <text x="35" y="30" text-anchor="middle" class="bold-label" fill="#b45309" font-size="12">MUX</text>
+  <!-- Wire: 10進カウンタ -> 6進カウンタ -->
+  <line x1="485" y1="120" x2="545" y2="120" class="wire" marker-end="url(#arrow)"/>
+  <text x="515" y="110" text-anchor="middle" class="wire-label">rollover</text>
+
+  <!-- SubModule 3: 6進カウンタ -->
+  <g class="shadow">
+    <rect x="545" y="70" width="175" height="100" rx="10" fill="url(#subBg3)" stroke="#16a34a" stroke-width="2"/>
+    <text x="632" y="98" text-anchor="middle" class="bold-label" fill="#15803d">6進カウンタ (u6)</text>
+    <text x="632" y="120" text-anchor="middle" class="label" fill="#475569">ModuloNCounter(6, 3)</text>
+    <text x="632" y="145" text-anchor="middle" class="wire-label">10の位 (0〜5)</text>
   </g>
 
-  <!-- Control signal for MUX -->
-  <path d="M 230, 235 L 325, 235" class="ctrl-wire" marker-end="url(#arrow-ctrl)"/>
-  <text x="270" y="228" text-anchor="middle" class="wire-label" fill="#b45309">io.sel (選択)</text>
+  <!-- Outputs -->
+  <line x1="397" y1="170" x2="397" y2="225" class="wire" marker-end="url(#arrow)"/>
+  <circle cx="397" cy="225" r="3.5" class="port"/>
+  <text x="397" y="245" text-anchor="middle" class="bold-label" fill="#1e40af">io.secUnits (1の位)</text>
 
-  <!-- Wires from Submodules to MUX -->
-  <!-- SubA to MUX in0 -->
-  <path d="M 190, 190 L 190, 215 L 340, 215" class="wire" marker-end="url(#arrow)"/>
-  <!-- SubB to MUX in1 -->
-  <path d="M 530, 190 L 530, 215 L 380, 215" class="wire" marker-end="url(#arrow)"/>
-
-  <!-- MUX to Top Output -->
-  <path d="M 360, 260 L 360, 300" class="wire" marker-end="url(#arrow)"/>
-  <circle cx="360" cy="300" r="4" class="port"/>
-  <text x="360" y="316" text-anchor="middle" class="bold-label" fill="#1e40af">io.out (トップ出力)</text>
-
-  <!-- Submodule Pins -->
-  <circle cx="190" cy="190" r="3.5" class="port"/>
-  <circle cx="530" cy="190" r="3.5" class="port"/>
+  <line x1="632" y1="170" x2="632" y2="225" class="wire" marker-end="url(#arrow)"/>
+  <circle cx="632" cy="225" r="3.5" class="port"/>
+  <text x="632" y="245" text-anchor="middle" class="bold-label" fill="#1e40af">io.secTens (10の位)</text>
 </svg>

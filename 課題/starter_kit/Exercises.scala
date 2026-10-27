@@ -213,17 +213,18 @@ class GrayCodeCounter extends Module {
 // 第5回: 60進カウンタの構造化設計 (Hierarchical 60-Counter)
 // ============================================================================
 
-// 基本問題: 同期カスケード 60進カウンタ
-class Counter60 extends Module {
+// 基本問題: 1Hz生成モジュール + 10進カウンタ + 6進カウンタによる階層化 60進カウンタ
+class Counter60(val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
     val en       = Input(Bool())
     val clear    = Input(Bool())
     val secUnits = Output(UInt(4.W)) // 1の位 (0〜9)
     val secTens  = Output(UInt(3.W)) // 10の位 (0〜5)
-    val cout     = Output(Bool())    // 59でアサート
+    val cout     = Output(Bool())    // 59秒の最後の1クロックでアサート
   })
 
-  // TODO: 10進カウンタと6進カウンタを同期カスケード(en接続)で階層化設計してください
+  // TODO: OneHzGenerator(clkFreq)、10進カウンタ、6進カウンタの3つのサブモジュールをインスタンス化し、
+  //       同期イネーブル接続 (oneHzPulse -> 10進en, 10進rollover -> 6進en) で階層化設計してください
   // ※ 非同期クロックの使用は厳禁です
   io.secUnits := 0.U
   io.secTens  := 0.U

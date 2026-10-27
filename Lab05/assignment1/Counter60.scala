@@ -1,6 +1,42 @@
 import chisel3._
+import chisel3.util.log2Ceil
 
-// 任意進数カウンタ (ヘルパーモジュール: load信号を排除した同期クリア付きモジュロNカウンタ)
+// 1Hzのen信号を出すモジュール (サブモジュール1)
+class OneHzGenerator(val clkFreq: Int = 9000000) extends Module {
+  val io = IO(new Bundle {
+    val en         = Input(Bool())
+    val clear      = Input(Bool())
+    val ledBlink   = Output(Bool())
+    val oneHzPulse = Output(Bool())
+  })
+
+  val halfPeriod = clkFreq / 2
+  val fullPeriod = clkFreq
+  val cntWidth   = log2Ceil(fullPeriod)
+
+  val cntReg = RegInit(0.U(cntWidth.W))
+  val ledReg = RegInit(false.B)
+
+  when(io.clear) {
+    cntReg := 0.U
+    ledReg := false.B
+  }.elsewhen(io.en) {
+    when(cntReg === (fullPeriod - 1).U) {
+      cntReg := 0.U
+      ledReg := !ledReg
+    }.elsewhen(cntReg === (halfPeriod - 1).U) {
+      cntReg := cntReg + 1.U
+      ledReg := !ledReg
+    }.otherwise {
+      cntReg := cntReg + 1.U
+    }
+  }
+
+  io.ledBlink   := ledReg
+  io.oneHzPulse := io.en && (cntReg === (fullPeriod - 1).U)
+}
+
+// 任意進数カウンタ (サブモジュール2・3: 10進カウンタおよび6進カウンタとして使用)
 class ModuloNCounter(val n: Int, val width: Int) extends Module {
   val io = IO(new Bundle {
     val en       = Input(Bool())
@@ -18,17 +54,19 @@ class ModuloNCounter(val n: Int, val width: Int) extends Module {
   io.rollover := io.en && (cntReg === (n - 1).U)
 }
 
-// 基本問題: 同期カスケード 60進カウンタ
-class Counter60 extends Module {
+// 基本問題: 1Hz生成モジュール + 10進カウンタ + 6進カウンタによる階層化 60進カウンタ
+class Counter60(val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
     val en       = Input(Bool())
     val clear    = Input(Bool())
     val secUnits = Output(UInt(4.W)) // 1の位 (0〜9)
     val secTens  = Output(UInt(3.W)) // 10の位 (0〜5)
-    val cout     = Output(Bool())    // 59でアサート
+    val cout     = Output(Bool())    // 59秒の最後の1クロックでアサート
   })
 
-  // TODO: 10進カウンタと6進カウンタを同期カスケード(cout -> en接続)で階層化設計してください
+  // TODO: OneHzGenerator(clkFreq)、10進カウンタ ModuloNCounter(10, 4)、6進カウンタ ModuloNCounter(6, 3) の
+  //       3つのサブモジュールを Module(new ...) でインスタンス化し、
+  //       同期イネーブル接続 (oneHzPulse -> 10進en, 10進rollover -> 6進en) で階層化設計してください。
   // ※ リップルクロック（非同期クロック）の使用は厳禁です
   io.secUnits := 0.U
   io.secTens  := 0.U
