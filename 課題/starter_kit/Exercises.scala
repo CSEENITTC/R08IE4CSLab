@@ -167,8 +167,8 @@ class PwmGenerator(val periodMax: Int = 255) extends Module {
 // 第4回: RingカウンタとJohnsonカウンタ (Ring & Johnson Counters)
 // ============================================================================
 
-// 基本問題: 自己復帰回路付き 4ビットRingカウンタ
-class SelfCorrectingRingCounter(val width: Int = 4) extends Module {
+// 基本問題: 4ビットRingカウンタ
+class RingCounter(val width: Int = 4) extends Module {
   val io = IO(new Bundle {
     val en  = Input(Bool())
     val out = Output(UInt(width.W))
@@ -176,7 +176,7 @@ class SelfCorrectingRingCounter(val width: Int = 4) extends Module {
 
   val state = RegInit(1.U(width.W))
 
-  // TODO: 不正状態(PopCount!=1)からの自動復帰論理を持つ1-hot循環シフトを実装してください
+  // TODO: 下位ビットから上位ビットへ移動し、最上位ビットを最下位ビットへ帰還する1-hot循環シフトを実装してください
   io.out := state
 }
 

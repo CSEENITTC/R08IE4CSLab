@@ -60,7 +60,6 @@ style: |
 | **モジュロNラップ** | `when(cnt === (n-1).U) { cnt := 0.U }` | 終端検出による巡回リセット |
 | **Ringカウンタ循環** | `Cat(state(w - 2, 0), state(w - 1))` | 1-hot左循環シフト |
 | **Johnson反転帰還** | `Cat(state(w - 2, 0), ~state(w - 1))` | 最上位ビットの反転を最下位へ帰還 ($2N$ 状態) |
-| **1-hot自己復帰判定** | `PopCount(state) === 1.U` | 立っているビット数が1以外の時に初期値へ強制復帰 |
 | **グレイコード変換** | `val gray = bin ^ (bin >> 1)` | 隣接遷移で常に1ビットのみ反転する安全符号 |
 
 ---
@@ -136,7 +135,7 @@ io.rdata := Mux(bypass, io.wdata, rawData)
 | **第1回** | `HalfAdder`, `FullAdder` | `AdderWithParity4` (加算・パリティ) | 拡張加算 `+&`、縮約XOR `xorR` |
 | **第2回** | `Mux4to1`, `SevenSegDecoder` | `PriorityEncoder4` (`valid` 出力) | `WireDefault`、`io.in.orR` |
 | **第3回** | `ModuloNCounter` (クリア/ロード/en) | `PwmGenerator` (周期/Duty比較) | $N-1$ ラップ、優先度 `clear > load > en` |
-| **第4回** | `SelfCorrectingRingCounter`, `JohnsonCounter` | `GrayCodeCounter` (ハミング距離1) | `PopCount(state) === 1.U` 自己復帰 |
+| **第4回** | `RingCounter`, `JohnsonCounter` | `GrayCodeCounter` (ハミング距離1) | 1-hot初期値 `1.U`、反転帰還 `~state(3)` |
 | **第5回** | `Counter60` (10進×6進カスケード) | `DigitalClockCore` (24時間時計) | **リップルクロック厳禁**、`cout` $\to$ `en` |
 | **第6回** | `StructuredALU` (算術/論理統合) | `PipelinedALUWithFlags` (パイプライン) | `Module(new ...)`、`RegNext` 遅延同期 |
 | **第7回** | `SequenceDetector101` (Moore型) | `TrafficLightController` (タイマ連動) | `ChiselEnum`、重複 "10101" 検出 |

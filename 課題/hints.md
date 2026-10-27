@@ -72,9 +72,9 @@
 
 ## 第4回: RingカウンタとJohnsonカウンタ
 
-### 基本問題ヒント (`SelfCorrectingRingCounter`, `JohnsonCounter`)
-1. **1-hot判定と復帰**: 4ビットRingカウンタの正常状態は `0001`, `0010`, `0100`, `1000` の4つのみです。立っているビット数を数える `PopCount(out) === 1.U` を判定論理に用いることで、万が一外乱やノイズで多重ビットが立ったり全ゼロになった場合でも、次クロックで `0001.U` に復帰させることができます。
-2. **Johnsonカウンタの帰還**: 最上位ビット `out(width-1)` を取り出し、それを反転した信号 `~out(width-1)` を下位ビット `out(width-2, 0)` と結合（`Cat(out(width-2, 0), ~out(width-1))`）して次状態レジスタへ入力します。
+### 基本問題ヒント (`RingCounter`, `JohnsonCounter`)
+1. **Ringカウンタの循環シフト**: 4ビットRingカウンタは初期値を `1.U(4.W)`（`0001_2`）とし、クロック毎に下位ビット `state(width-2, 0)` を上位側へシフトしつつ、最上位ビット `state(width-1)` を最下位ビットへ帰還（`Cat(state(width-2, 0), state(width-1))`）させることで、`0001` $\to$ `0010` $\to$ `0100` $\to$ `1000` の4つの1-hot状態を巡回します。
+2. **Johnsonカウンタの帰還**: 最上位ビット `state(width-1)` を取り出し、それを反転した信号 `~state(width-1)` を下位ビット `state(width-2, 0)` と結合（`Cat(state(width-2, 0), ~state(width-1))`）して次状態レジスタへ入力します。
 
 ### 発展問題ヒント (`GrayCodeCounter`)
 1. **変換式の簡潔性**: バイナリコード $B$ からグレイコード $G$ への変換は $G = B \oplus (B \gg 1)$ で表されます。Chiselでは `val gray = bin ^ (bin >> 1)` と直感的に記述できます。

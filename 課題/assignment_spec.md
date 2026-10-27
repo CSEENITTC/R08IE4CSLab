@@ -115,19 +115,19 @@
 
 ## 第4回: RingカウンタとJohnsonカウンタ (Ring & Johnson Counters)
 
-### 基本問題 (必須・目安45分): 自己復帰回路付き 4ビットRing & Johnsonカウンタ
-- **モジュール名**: `SelfCorrectingRingCounter(width: Int = 4)`
+### 基本問題 (必須・目安45分): 4ビットRing & Johnsonカウンタ
+- **モジュール名**: `RingCounter(width: Int = 4)`
   - **入力**: `en` (Bool)
   - **出力**: `out` (UInt(width.W))
   - **論理仕様**:
-    - リセット時: `1.U(width.W)`（0001_2: 1-hot）。
-    - 自己復帰論理: レジスタ値が1-hotパターン以外（PopCount $\neq$ 1、または0）の場合、次クロックで自動的に `1.U` へ強制復帰。正常時は左循環シフト。
+    - リセット時: `1.U(width.W)`（`0001_2`: 1-hot）。
+    - `en` 有効時、下位ビットから上位ビットへシフトし、最上位ビット `state(width - 1)` を最下位ビットへ循環帰還（`Cat(state(width - 2, 0), state(width - 1))`）。
 - **モジュール名**: `JohnsonCounter(width: Int = 4)`
   - **入力**: `en` (Bool)
   - **出力**: `out` (UInt(width.W))
   - **論理仕様**:
     - リセット時: `0.U(width.W)`。
-    - 最上位ビットの反転 `~out(width - 1)` を最下位ビットに結合し、左シフト。$2 \times width$ 個のユニークな状態を巡回。
+    - 最上位ビットの反転 `~state(width - 1)` を最下位ビットに結合し、下位ビットから上位ビットへシフト。$2 \times width$ 個のユニークな状態を巡回。
 
 ### 発展問題 (推奨・目安35分): 4ビット・グレイコード・カウンタ
 - **モジュール名**: `GrayCodeCounter`
