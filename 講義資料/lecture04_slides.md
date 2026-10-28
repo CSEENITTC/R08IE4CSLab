@@ -195,97 +195,84 @@ Johnsonカウンタの素晴らしい特性です。
 
 ---
 
-## 7. RingカウンタのChisel実装 (`RingCounter.scala`)
+## 7. `RingCounter` の全体ブロック図とChisel実装
 
-第3回と同様、9MHzクロックから1秒パルス `enRingCounter` を生成し、1秒ごとに1-hot状態をシフトします。
+<p align="center">
+  <img src="figures/lecture04_ring_module.svg" width="620">
+</p>
 
 ```scala
 class RingCounter(val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
-    val en     = Input(Bool())
-    val clear  = Input(Bool())
-    val runLED = Output(Bool())
-    val out    = Output(UInt(width.W))
+    val en = Input(Bool()); val clear = Input(Bool())
+    val runLED = Output(Bool()); val out = Output(UInt(width.W))
   })
   val halfPeriod = clkFreq / 2; val fullPeriod = clkFreq
-  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W))
-  val state  = RegInit(1.U(width.W)) // 初期値 0001_2 (1-hot)
-  val ledReg = RegInit(false.B)
-  val enRingCounter = WireDefault(false.B)
+  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W)); val state = RegInit(1.U(width.W))
+  val ledReg = RegInit(false.B); val enRingCounter = WireDefault(false.B)
 
-  // 1. 9MHz分周カウンタ更新論理 & 1秒ストローブ生成
+  // 1. 9MHz分周カウンタ & 1秒ストローブ生成
   when(io.clear) { cntReg := 0.U }.elsewhen(io.en) {
     when(cntReg === (clkFreq - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
   }
   enRingCounter := io.en && (cntReg === (fullPeriod - 1).U)
-
-  // 2. Ringカウンタ状態更新論理 (clear時は 1.U、1秒毎に下位から上位へ循環シフト)
+  // 2. Ringカウンタ状態更新 (clear時は 1.U、1秒毎に下位から上位へ循環シフト)
   when(io.clear) { state := 1.U }.elsewhen(enRingCounter) {
     state := Cat(state(width - 2, 0), state(width - 1))
   }
-
-  // 3. LED点滅更新論理 & 4. 出力論理 (実機観測時は ~state に切替可能)
+  // 3. LED点滅更新 & 4. 出力論理
   when(io.clear) { ledReg := true.B }.elsewhen(io.en) {
     when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) { ledReg := !ledReg }
   }
-  io.out    := state   // 実機LED負論理点灯時は io.out := ~state
-  io.runLED := ~ledReg
+  io.out := state /* 実機LED時は ~state */; io.runLED := ~ledReg
 }
 ```
 
 <!-- Note:
-Implement/Lab04/assignment1/RingCounter.scala の完全実装です。
-第3回の ModuloNCounter と全く同じ構造で、まず cntReg で9MHzを数えて1秒に1クロックだけ High になる enRingCounter を作ります。
-そして state レジスタは、clear が押されたら初期値 1.U（0001_2）に戻り、enRingCounter が来た瞬間に Cat(state(width - 2, 0), state(width - 1)) で1ビット上位へ循環シフトします。
-テストベンチ実行時は io.out := state で正論理検証し、TeCボード実機で「1のビットだけLEDを点灯」させたい場合はコメントアウトを切り替えて io.out := ~state とすることで負論理LEDに対応できます。
+Implement/Lab04/assignment1/RingCounter.scala の内部ブロック図とChisel実装です。
+左側の分周カウンタ cntReg が9MHzをカウントし、1秒に1クロックだけ High になる enRingCounter を生成します。
+そのイネーブルパルスを受けて、中央下の4ビット状態レジスタ state（初期値 1.U = 0001_2）が Cat(state(width - 2, 0), state(width - 1)) で下位から上位へ循環シフトします。
 -->
 
 ---
 
-## 8. JohnsonカウンタのChisel実装 (`JohnsonCounter.scala`)
+## 8. `JohnsonCounter` の全体ブロック図とChisel実装
 
-`enJohnsonCounter` パルスごとに、最上位ビットの反転 `~state(width - 1)` を最下位ビットへ帰還します。
+<p align="center">
+  <img src="figures/lecture04_johnson_module.svg" width="620">
+</p>
 
 ```scala
 class JohnsonCounter(val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
-    val en     = Input(Bool())
-    val clear  = Input(Bool())
-    val runLED = Output(Bool())
-    val out    = Output(UInt(width.W))
+    val en = Input(Bool()); val clear = Input(Bool())
+    val runLED = Output(Bool()); val out = Output(UInt(width.W))
   })
   val halfPeriod = clkFreq / 2; val fullPeriod = clkFreq
-  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W))
-  val state  = RegInit(0.U(width.W)) // 初期値 0000_2
-  val ledReg = RegInit(false.B)
-  val enJohnsonCounter = WireDefault(false.B)
+  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W)); val state = RegInit(0.U(width.W))
+  val ledReg = RegInit(false.B); val enJohnsonCounter = WireDefault(false.B)
 
-  // 1. 9MHz分周カウンタ更新論理 & 1秒ストローブ生成
+  // 1. 9MHz分周カウンタ & 1秒ストローブ生成
   when(io.clear) { cntReg := 0.U }.elsewhen(io.en) {
     when(cntReg === (clkFreq - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
   }
   enJohnsonCounter := io.en && (cntReg === (fullPeriod - 1).U)
-
-  // 2. Johnsonカウンタ状態更新論理 (clear時は 0.U、1秒毎にMSBの反転をLSBへ帰還)
+  // 2. Johnsonカウンタ状態更新 (clear時は 0.U、1秒毎にMSBの反転をLSBへ帰還)
   when(io.clear) { state := 0.U }.elsewhen(enJohnsonCounter) {
     state := Cat(state(width - 2, 0), ~state(width - 1))
   }
-
-  // 3. LED点滅更新論理 & 4. 出力論理
+  // 3. LED点滅更新 & 4. 出力論理
   when(io.clear) { ledReg := false.B }.elsewhen(io.en) {
     when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) { ledReg := !ledReg }
   }
-  io.out    := state   // 実機LED負論理点灯時は io.out := ~state
-  io.runLED := ~ledReg
+  io.out := ~state /* テスト時は state */; io.runLED := ~ledReg
 }
 ```
 
 <!-- Note:
-Implement/Lab04/assignment2/JohnsonCounter.scala の完全実装です。
-Ringカウンタとの違いは2箇所だけです。
-1つ目は state の初期値と clear 時の値が 0.U（0000_2）であること。
-2つ目は Cat(state(width - 2, 0), ~state(width - 1)) と、最上位ビットを ~ で反転して最下位ビットへ入れていることです。
-また出力段では、テストベンチ検証時は io.out := state、TeCボード実機の負論理LEDで点灯確認する際は io.out := ~state を使います。
+Implement/Lab04/assignment2/JohnsonCounter.scala の内部ブロック図とChisel実装です。
+分周カウンタから1秒ごとに出る enJohnsonCounter によって、状態レジスタ state（初期値 0.U = 0000_2）が更新されます。
+帰還経路に ~NOT が入っており、最上位ビット state(3) を反転して最下位ビット state(0) に戻すことで8状態を巡回します。
 -->
 
 ---

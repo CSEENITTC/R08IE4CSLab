@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 220" width="100%" height="100%">
+  <defs>
+    <style>
+      .label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 12px; fill: #1e293b; }
+      .bold-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 13px; font-weight: bold; fill: #0f172a; }
+      .wire-label { font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 11px; font-weight: bold; }
+      .sub-label { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 10.5px; fill: #475569; }
+      .wire-pulse { stroke: #d97706; stroke-width: 2.2; fill: none; stroke-linecap: round; }
+      .wire-data { stroke: #2563eb; stroke-width: 2; fill: none; stroke-linecap: round; }
+      .wire-ctrl { stroke: #64748b; stroke-width: 1.6; fill: none; stroke-linecap: round; }
+      .box-seq { fill: #f0fdf4; stroke: #16a34a; stroke-width: 1.6; rx: 5; }
+      .box-not { fill: #fee2e2; stroke: #dc2626; stroke-width: 1.5; rx: 4; }
+      .shadow { filter: drop-shadow(0px 2px 4px rgba(0, 0, 0, 0.06)); }
+    </style>
+    <marker id="arrow-pulse" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrow-data" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-ctrl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect x="6" y="6" width="748" height="208" rx="12" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+
+  <!-- Input Ports -->
+  <text x="16" y="75" class="wire-label" fill="#0f172a">io.en</text>
+  <text x="16" y="125" class="wire-label" fill="#dc2626">io.clear</text>
+  <line x1="65" y1="71" x2="95" y2="71" class="wire-ctrl" marker-end="url(#arrow-ctrl)"/>
+  <line x1="65" y1="121" x2="95" y2="121" class="wire-ctrl" marker-end="url(#arrow-ctrl)"/>
+
+  <!-- Module Box: JohnsonCounter -->
+  <g class="shadow" transform="translate(95, 16)">
+    <rect x="0" y="0" width="535" height="186" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/>
+    <rect x="0" y="0" width="535" height="26" rx="10" fill="#eff6ff"/>
+    <text x="267" y="18" text-anchor="middle" class="bold-label" fill="#1e40af">JohnsonCounter (width=4, clkFreq=9MHz) 内部ブロック構成</text>
+
+    <!-- Block 1: 9MHz Divider (cntReg) -->
+    <rect x="14" y="38" width="136" height="134" rx="8" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5"/>
+    <text x="82" y="58" text-anchor="middle" class="bold-label" fill="#334155">1. 分周カウンタ</text>
+    <text x="82" y="76" text-anchor="middle" class="wire-label" fill="#0f172a">cntReg (24bit)</text>
+    <text x="82" y="94" text-anchor="middle" class="sub-label">0 〜 clkFreq-1</text>
+    <text x="82" y="114" text-anchor="middle" class="sub-label">clear時: 0.U</text>
+    <text x="82" y="132" text-anchor="middle" class="sub-label" fill="#b45309">満了時1クロックHigh:</text>
+    <text x="82" y="148" text-anchor="middle" class="wire-label" fill="#d97706">enJohnsonCounter</text>
+
+    <!-- Block 3: LED Toggler (ledReg) -->
+    <rect x="205" y="36" width="312" height="40" rx="6" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+    <text x="361" y="53" text-anchor="middle" class="bold-label" fill="#b45309">3. LED点滅レジスタ: ledReg (RegInit(false.B))</text>
+    <text x="361" y="69" text-anchor="middle" class="sub-label" fill="#78350f">clear時: false.B / 0.5秒(halfPeriod-1, fullPeriod-1)毎に !ledReg</text>
+
+    <!-- Block 2: Johnson Counter State Register (state) -->
+    <rect x="205" y="86" width="312" height="88" rx="8" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text x="361" y="103" text-anchor="middle" class="bold-label" fill="#065f46">2. 2N状態レジスタ: state (初期値・clear時 = 0.U : 0000₂)</text>
+
+    <!-- 4 Flip-Flops inside state: MSB(3) on Left, LSB(0) on Right -->
+    <rect x="235" y="112" width="52" height="32" class="box-seq"/>
+    <text x="261" y="127" text-anchor="middle" class="wire-label" fill="#166534">state(3)</text>
+    <text x="261" y="139" text-anchor="middle" class="sub-label" font-size="9">MSB(0)</text>
+
+    <line x1="305" y1="128" x2="287" y2="128" class="wire-data" marker-end="url(#arrow-data)"/>
+
+    <rect x="305" y="112" width="52" height="32" class="box-seq"/>
+    <text x="331" y="127" text-anchor="middle" class="wire-label" fill="#166534">state(2)</text>
+    <text x="331" y="139" text-anchor="middle" class="sub-label" font-size="9">bit 2(0)</text>
+
+    <line x1="375" y1="128" x2="357" y2="128" class="wire-data" marker-end="url(#arrow-data)"/>
+
+    <rect x="375" y="112" width="52" height="32" class="box-seq"/>
+    <text x="401" y="127" text-anchor="middle" class="wire-label" fill="#166534">state(1)</text>
+    <text x="401" y="139" text-anchor="middle" class="sub-label" font-size="9">bit 1(0)</text>
+
+    <line x1="445" y1="128" x2="427" y2="128" class="wire-data" marker-end="url(#arrow-data)"/>
+
+    <rect x="445" y="112" width="52" height="32" class="box-seq"/>
+    <text x="471" y="127" text-anchor="middle" class="wire-label" fill="#166534">state(0)</text>
+    <text x="471" y="139" text-anchor="middle" class="sub-label" font-size="9">LSB(0)</text>
+
+    <!-- NOT gate & Feedback loop: ~state(3) -> state(0) -->
+    <path d="M 235,128 L 217,128 L 217,162 L 265,162" class="wire-data"/>
+    <rect x="265" y="152" width="38" height="18" class="box-not"/>
+    <text x="284" y="165" text-anchor="middle" class="wire-label" fill="#dc2626" font-size="10">~NOT</text>
+    <path d="M 303,162 L 509,162 L 509,128 L 497,128" class="wire-data" marker-end="url(#arrow-data)"/>
+    <text x="406" y="158" text-anchor="middle" class="wire-label" fill="#dc2626" font-size="10">Cat(state(2, 0), ~state(3))</text>
+
+    <!-- Internal connections from Divider -->
+    <line x1="150" y1="56" x2="205" y2="56" class="wire-pulse" marker-end="url(#arrow-pulse)"/>
+    <text x="177" y="50" text-anchor="middle" class="sub-label" fill="#b45309" font-size="9.5">0.5s反転</text>
+
+    <line x1="150" y1="130" x2="205" y2="130" class="wire-pulse" marker-end="url(#arrow-pulse)"/>
+    <text x="177" y="123" text-anchor="middle" class="wire-label" fill="#d97706" font-size="9.5">1Hz en</text>
+  </g>
+
+  <!-- Output Ports -->
+  <!-- io.runLED -->
+  <line x1="612" y1="72" x2="644" y2="72" class="wire-data"/>
+  <circle cx="652" cy="72" r="7" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="652" y="76" text-anchor="middle" font-size="11" font-weight="bold" fill="#dc2626">~</text>
+  <line x1="659" y1="72" x2="680" y2="72" class="wire-data" marker-end="url(#arrow-data)"/>
+  <text x="685" y="76" class="wire-label" fill="#16a34a">io.runLED</text>
+
+  <!-- io.out[3:0] -->
+  <line x1="612" y1="146" x2="644" y2="146" class="wire-data"/>
+  <circle cx="652" cy="146" r="7" fill="#fee2e2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="652" y="150" text-anchor="middle" font-size="11" font-weight="bold" fill="#dc2626">~</text>
+  <line x1="659" y1="146" x2="680" y2="146" class="wire-data" marker-end="url(#arrow-data)"/>
+  <text x="685" y="143" class="wire-label" fill="#2563eb">io.out[3:0]</text>
+  <text x="685" y="158" class="sub-label">(~state / state)</text>
+</svg>

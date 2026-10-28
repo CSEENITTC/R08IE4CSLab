@@ -50,41 +50,13 @@ style: |
 
 ---
 
-## 2. Chisel 実装構成（1秒ストローブ連携 & LED出力）
+## 2. 3つのカウンタ回路の内部ブロック構成図
 
-```scala
-class RingCounter(val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
-  val io = IO(new Bundle {
-    val en     = Input(Bool())
-    val clear  = Input(Bool())
-    val runLED = Output(Bool())
-    val out    = Output(UInt(width.W))
-  })
-  val halfPeriod = clkFreq / 2; val fullPeriod = clkFreq
-  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W))
-  val state  = RegInit(1.U(width.W))
-  val ledReg = RegInit(false.B)
-  val enRingCounter = WireDefault(false.B)
-
-  // 1. 9MHz分周カウンタ & 1秒ストローブ生成
-  when(io.clear) { cntReg := 0.U }.elsewhen(io.en) {
-    when(cntReg === (clkFreq - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
-  }
-  enRingCounter := io.en && (cntReg === (fullPeriod - 1).U)
-
-  // 2. 状態更新論理 (Johnsonの場合は clear時 0.U、シフトは Cat(state(width - 2, 0), ~state(width - 1)))
-  when(io.clear) { state := 1.U }.elsewhen(enRingCounter) {
-    state := Cat(state(width - 2, 0), state(width - 1))
-  }
-
-  // 3. 0.5秒LED反転 & 4. 出力論理
-  when(io.clear) { ledReg := true.B }.elsewhen(io.en) {
-    when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) { ledReg := !ledReg }
-  }
-  io.out    := state   // 実機TeCボードの負論理LEDで点灯確認する際は ~state
-  io.runLED := ~ledReg
-}
-```
+<p align="center">
+  <img src="figures/lecture04_ring_module.svg" width="540"><br>
+  <img src="figures/lecture04_johnson_module.svg" width="540"><br>
+  <img src="figures/lecture04_gray_counter.svg" width="540">
+</p>
 
 ---
 
