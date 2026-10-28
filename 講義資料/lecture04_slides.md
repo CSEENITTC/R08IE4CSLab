@@ -13,13 +13,13 @@ style: |
   }
   h1 { color: #1e3a8a; font-size: 34px; }
   h2 { color: #1e40af; border-bottom: 2px solid #3b82f6; font-size: 26px; }
-  pre { font-size: 16px; margin: 8px 0; }
+  pre { font-size: 15px; margin: 8px 0; }
   .box { background: #eff6ff; border-left: 5px solid #3b82f6; padding: 8px 14px; margin: 8px 0; }
   .badge { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 16px; }
 ---
 
 # 第4回: RingカウンタとJohnsonカウンタ
-### 〜シフトレジスタの循環構造と1-hot / 2N状態巡回カウンタ〜
+### 〜シフトレジスタの循環構造・1秒イネーブル連携と実機LED駆動〜
 
 <br>
 
@@ -27,19 +27,19 @@ style: |
 - **講義時間**: 60分
 - **対象**: デジタル論理回路基礎習得者
 - **本日のアジェンダ**:
-  1. 前回の復習（バイナリカウンタの限界とデコード遅延）
+  1. 前回の復習（バイナリカウンタの課題と1秒ストローブ生成）
   2. シフトレジスタの基本構造とChiselでの配線 (`Cat`, ビットスライス)
-  3. Ringカウンタのアーキテクチャと1-hot（ワンホット）状態
+  3. Ringカウンタのアーキテクチャと1-hot（ワンホット）状態遷移
   4. Johnsonカウンタ（モビウス・カウンタ）の $2N$ 状態巡回
-  5. Ringカウンタ・JohnsonカウンタのChisel実装
-  6. 発展トピック: グレイコード・カウンタ（ハミング距離1遷移）
-  7. 本日の演習課題（基本: Ring & Johnson / 発展: グレイコード）
+  5. 1秒ストローブ (`enRingCounter` / `enJohnsonCounter`) を用いた実機対応Chisel実装
+  6. 発展トピック: グレイコード・カウンタ（ハミング距離1遷移）とChisel実装
+  7. 実機FPGA（TeCボード）配線仕様と本日の演習課題
 
 <!-- Note:
 第4回講義へようこそ。
-前回は二進数を数え上げるバイナリカウンタを学びました。
-今回は、同じカウンタでも全く異なるアプローチを取る「シフトレジスタ応用カウンタ」を扱います。
-RingカウンタやJohnsonカウンタは、加算器を使わずにシフトと帰還だけで状態を巡回させるため、超高速動作や低消費電力、グリッチフリーなタイミング信号生成に広く使われています。
+前回は9MHzクロックから1秒パルスを生成し、二進数を数え上げるバイナリカウンタを学びました。
+今回は、同じ1秒イネーブルパルスを使って駆動しながらも、全く異なるアプローチを取る「シフトレジスタ応用カウンタ（Ringカウンタ・Johnsonカウンタ）」と「グレイコードカウンタ」を扱います。
+加算器を使わずにシフトと帰還だけで状態を巡回させる回路原理と、TeCボード実機で1秒ごとにLEDが移動・点灯する実装方法を学びます。
 -->
 
 ---
@@ -108,15 +108,15 @@ $N$ 個のFFのうち、**常に1つのビットだけが `1` (High) で、他�
 $$0001_2 \longrightarrow 0010_2 \longrightarrow 0100_2 \longrightarrow 1000_2 \longrightarrow 0001_2 \cdots$$
 
 ```scala
-val state = RegInit(1.U(4.W)) // 初期値 0001_2 (LSBのみ1)
-state := Cat(state(2, 0), state(3)) // 下位3bitを上位へシフトし、MSB(bit 3)をLSB(bit 0)へ帰還
+val state = RegInit(1.U(width.W)) // 初期値 0001_2 (LSBのみ1)
+state := Cat(state(width - 2, 0), state(width - 1)) // 下位ビットを上位へ、MSBをLSBへ帰還
 ```
 
 <!-- Note:
 Ringカウンタの動作です。
 左側から3、2、1、0ビット（右側がLSB）として配置しています。
-初期値として 0001（FF(0)=1）を入れておくと、クロックが来るたびに 1 が下位ビット（右側）から上位ビット（左側）へと移動し、最上位のFF(3)から最下位のFF(0)へ循環帰還します。
-実装コードの Cat(state(2, 0), state(3)) と図の配線が1対1で対応しています。
+初期値として 0001（FF(0)=1）を入れておくと、イネーブルパルスが来るたびに 1 が下位ビット（右側）から上位ビット（左側）へと移動し、最上位のFF(3)から最下位のFF(0)へ循環帰還します。
+実装コードの Cat(state(width - 2, 0), state(width - 1)) と図の配線が1対1で対応しています。
 -->
 
 ---
@@ -152,8 +152,8 @@ Ringカウンタの絶大なメリットです。
 $$0000 \to 0001 \to 0011 \to 0111 \to 1111 \to 1110 \to 1100 \to 1000 \to 0000$$
 
 ```scala
-val state = RegInit(0.U(4.W)) // 初期値 0000_2
-state := Cat(state(2, 0), ~state(3)) // 下位3bitを上位へシフトし、MSBの反転(~bit 3)をLSBへ帰還
+val state = RegInit(0.U(width.W)) // 初期値 0000_2
+state := Cat(state(width - 2, 0), ~state(width - 1)) // 下位ビットを上位へ、MSBの反転をLSBへ帰還
 ```
 
 - 状態数: **$2 \times N$ 個**（4ビットで 8状態、Ringカウンタの2倍！）。
@@ -162,7 +162,7 @@ state := Cat(state(2, 0), ~state(3)) // 下位3bitを上位へシフトし、MSB
 Johnsonカウンタ（別名モビウス・カウンタ）です。
 左側の最上位ビット FF(3) の出力をNOTゲートで反転させて、右側の最下位ビット FF(0) に戻します。
 すると、まず下位ビット（右側）から上位ビット（左側）へ向かって1が順番に充填されていき、全ビットが1（1111）になったら今度は下位ビットから上位ビットへ向かって0が順番に充填されていくという、2N個の状態を巡回します。
-実装コードの Cat(state(2, 0), ~state(3)) と図の構造が完全に対応しています。
+実装コードの Cat(state(width - 2, 0), ~state(width - 1)) と図の構造が完全に対応しています。
 -->
 
 ---
@@ -195,90 +195,118 @@ Johnsonカウンタの素晴らしい特性です。
 
 ---
 
-## 7. RingカウンタのChisel実装
+## 7. RingカウンタのChisel実装 (`RingCounter.scala`)
 
-下位ビット（`state(width - 2, 0)`）を上位ビット側へシフトし、最上位ビット（`state(width - 1)`）を最下位ビットへ循環接続します。
+第3回と同様、9MHzクロックから1秒パルス `enRingCounter` を生成し、1秒ごとに1-hot状態をシフトします。
 
 ```scala
-class RingCounter(val width: Int = 4) extends Module {
+class RingCounter(val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
-    val en  = Input(Bool())
-    val out = Output(UInt(width.W))
+    val en     = Input(Bool())
+    val clear  = Input(Bool())
+    val runLED = Output(Bool())
+    val out    = Output(UInt(width.W))
   })
+  val halfPeriod = clkFreq / 2; val fullPeriod = clkFreq
+  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W))
+  val state  = RegInit(1.U(width.W)) // 初期値 0001_2 (1-hot)
+  val ledReg = RegInit(false.B)
+  val enRingCounter = WireDefault(false.B)
 
-  // リセット時は 1-hot 初期値 0001_2 (1.U) に設定
-  val state = RegInit(1.U(width.W))
+  // 1. 9MHz分周カウンタ更新論理 & 1秒ストローブ生成
+  when(io.clear) { cntReg := 0.U }.elsewhen(io.en) {
+    when(cntReg === (clkFreq - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
+  }
+  enRingCounter := io.en && (cntReg === (fullPeriod - 1).U)
 
-  when(io.en) {
-    // 下位ビットから上位ビットへ移動し、MSBをLSBへ循環帰還
+  // 2. Ringカウンタ状態更新論理 (clear時は 1.U、1秒毎に下位から上位へ循環シフト)
+  when(io.clear) { state := 1.U }.elsewhen(enRingCounter) {
     state := Cat(state(width - 2, 0), state(width - 1))
   }
 
-  io.out := state
+  // 3. LED点滅更新論理 & 4. 出力論理 (実機観測時は ~state に切替可能)
+  when(io.clear) { ledReg := true.B }.elsewhen(io.en) {
+    when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) { ledReg := !ledReg }
+  }
+  io.out    := state   // 実機LED負論理点灯時は io.out := ~state
+  io.runLED := ~ledReg
 }
 ```
 
-- 初期値を `1.U(width.W)`（`0001_2`）とすることで、クロック毎に `0001` $\to$ `0010` $\to$ `0100` $\to$ `1000` $\to$ `0001` と巡回する。
-
 <!-- Note:
-RingカウンタのChisel実装です。
-初期値は必ず1ビットだけが1である 1.U（4ビットなら0001）で初期化します。
-enがHighのとき、Cat(state(width - 2, 0), state(width - 1)) によって、下位ビットが1つ上位へ移動し、最上位ビットが最下位ビットへと帰還します。
+Implement/Lab04/assignment1/RingCounter.scala の完全実装です。
+第3回の ModuloNCounter と全く同じ構造で、まず cntReg で9MHzを数えて1秒に1クロックだけ High になる enRingCounter を作ります。
+そして state レジスタは、clear が押されたら初期値 1.U（0001_2）に戻り、enRingCounter が来た瞬間に Cat(state(width - 2, 0), state(width - 1)) で1ビット上位へ循環シフトします。
+テストベンチ実行時は io.out := state で正論理検証し、TeCボード実機で「1のビットだけLEDを点灯」させたい場合はコメントアウトを切り替えて io.out := ~state とすることで負論理LEDに対応できます。
 -->
 
 ---
 
-## 8. JohnsonカウンタのChisel実装
+## 8. JohnsonカウンタのChisel実装 (`JohnsonCounter.scala`)
 
-下位ビット（`state(width - 2, 0)`）を上位ビット側へシフトし、最上位ビットの反転（`~state(width - 1)`）を最下位ビットへ帰還接続します。
+`enJohnsonCounter` パルスごとに、最上位ビットの反転 `~state(width - 1)` を最下位ビットへ帰還します。
 
 ```scala
-class JohnsonCounter(val width: Int = 4) extends Module {
+class JohnsonCounter(val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
-    val en  = Input(Bool())
-    val out = Output(UInt(width.W))
+    val en     = Input(Bool())
+    val clear  = Input(Bool())
+    val runLED = Output(Bool())
+    val out    = Output(UInt(width.W))
   })
+  val halfPeriod = clkFreq / 2; val fullPeriod = clkFreq
+  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W))
+  val state  = RegInit(0.U(width.W)) // 初期値 0000_2
+  val ledReg = RegInit(false.B)
+  val enJohnsonCounter = WireDefault(false.B)
 
-  // リセット時は全ビット 0 (0000_2) に設定
-  val state = RegInit(0.U(width.W))
+  // 1. 9MHz分周カウンタ更新論理 & 1秒ストローブ生成
+  when(io.clear) { cntReg := 0.U }.elsewhen(io.en) {
+    when(cntReg === (clkFreq - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
+  }
+  enJohnsonCounter := io.en && (cntReg === (fullPeriod - 1).U)
 
-  when(io.en) {
-    // 下位ビットから上位ビットへ移動し、MSBの反転をLSBへ帰還
+  // 2. Johnsonカウンタ状態更新論理 (clear時は 0.U、1秒毎にMSBの反転をLSBへ帰還)
+  when(io.clear) { state := 0.U }.elsewhen(enJohnsonCounter) {
     state := Cat(state(width - 2, 0), ~state(width - 1))
   }
 
-  io.out := state
+  // 3. LED点滅更新論理 & 4. 出力論理
+  when(io.clear) { ledReg := false.B }.elsewhen(io.en) {
+    when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) { ledReg := !ledReg }
+  }
+  io.out    := state   // 実機LED負論理点灯時は io.out := ~state
+  io.runLED := ~ledReg
 }
 ```
 
-- わずか1箇所（`~state(width - 1)` のビット反転）の違いで、状態数が $N$ 個から $2N$ 個（8状態）へ倍増する。
-
 <!-- Note:
-JohnsonカウンタのChisel実装です。
-Ringカウンタとのコード上の違いは、初期値が 0.U であることと、Catの第2引数が ~state(width - 1) と反転している点だけです。
-これだけで、0000から始まって1が下位から上位へ満たされ、1111に達した後は0が下位から上位へ満たされる8状態巡回カウンタになります。
+Implement/Lab04/assignment2/JohnsonCounter.scala の完全実装です。
+Ringカウンタとの違いは2箇所だけです。
+1つ目は state の初期値と clear 時の値が 0.U（0000_2）であること。
+2つ目は Cat(state(width - 2, 0), ~state(width - 1)) と、最上位ビットを ~ で反転して最下位ビットへ入れていることです。
+また出力段では、テストベンチ検証時は io.out := state、TeCボード実機の負論理LEDで点灯確認する際は io.out := ~state を使います。
 -->
 
 ---
 
 ## 9. 初期値設計と未使用状態（Unused States）の注意点
 
-### 初期値（`RegInit`）の重要性
+### 初期値（`RegInit` および `io.clear`）の重要性
 - **Ringカウンタ**:
   - 初期値を誤って `0.U` (`0000_2`) にすると、いくらシフトしても永久に `0000_2` のまま変化しない。
-  - 必ず **`RegInit(1.U(width.W))`** で1-hot初期状態を与える。
+  - 必ず **`RegInit(1.U(width.W))`** および `when(io.clear) { state := 1.U }` で1-hot初期状態を与える。
 - **Johnsonカウンタ**:
-  - 初期値 **`RegInit(0.U(width.W))`** から開始することで、正規の8状態ループ（`0000` $\sim$ `1000`）を巡回する。
+  - 初期値 **`RegInit(0.U(width.W))`** および `when(io.clear) { state := 0.U }` から開始することで、正規の8状態ループ（`0000` $\sim$ `1000`）を巡回する。
 
 <div class="box">
 <b>未使用状態 (Unused States) の存在</b><br>
-4ビットレジスタの全 $2^4 = 16$ 状態のうち、Ringカウンタは4状態（残り12状態は未使用）、Johnsonカウンタは8状態（残り8状態は未使用）のみを使用する。そのため、リセットによる確実な初期値設定が不可欠である。
+4ビットレジスタの全 $2^4 = 16$ 状態のうち、Ringカウンタは4状態（残り12状態は未使用）、Johnsonカウンタは8状態（残り8状態は未使用）のみを使用する。そのため、リセットおよび <code>clear</code> による確実な初期値設定が不可欠である。
 </div>
 
 <!-- Note:
 初期値設計と未使用状態に関する注意点です。
-Ringカウンタは自分自身のビットをそのまま循環させるため、もしリセット時に 0000 になっていると、永久に0のまま動きません。
-また、4ビット16通りのうち、Ringカウンタは4通り、Johnsonカウンタは8通りしか使いません。したがって、RegInit によって確実な初期状態からスタートさせることが順序回路設計の基本となります。
+Ringカウンタは自分自身のビットをそのまま循環させるため、もしリセット時や clear 時に 0000 にしてしまうと、永久に0のまま動きません。必ず 1.U に初期化します。
 -->
 
 ---
@@ -291,7 +319,7 @@ Ringカウンタは自分自身のビットをそのまま循環させるため�
 <div style="display: flex; justify-content: space-between;">
 <div style="width: 48%;">
 
-### 通常の2進数 (4bit)
+### 通常の2進数 (`bin`: 4bit)
 - $0000 \to 0001$ (1bit変化)
 - $0001 \to 0010$ (2bit変化)
 - $0011 \to 0100$ (3bit変化)
@@ -300,12 +328,12 @@ Ringカウンタは自分自身のビットをそのまま循環させるため�
 </div>
 <div style="width: 48%;">
 
-### グレイコード (4bit)
-- $0000 \to 0001$ (1bit)
-- $0001 \to 0011$ (1bit)
-- $0011 \to 0010$ (1bit)
-- $0010 \to 0110$ (1bit)
-- 常にハミング距離 $= 1$
+### グレイコード (`gray`: 4bit)
+- $0000 \to 0001$ (1bit変化)
+- $0001 \to 0011$ (1bit変化)
+- $0011 \to 0010$ (1bit変化)
+- $0010 \to 0110$ (1bit変化)
+- 常に**ハミング距離 $= 1$**
 
 </div>
 </div>
@@ -320,46 +348,70 @@ Ringカウンタは自分自身のビットをそのまま循環させるため�
 
 ---
 
-## 11. バイナリ $\iff$ グレイコードの相互変換論理
+## 11. バイナリ $\to$ グレイコード変換と回路構成
 
-### バイナリコード $B$ から グレイコード $G$ への変換
-第 $i$ ビットのグレイコード $G_i$ は、バイナリの自身と1つ上位ビットの排他的論理和。
+### 変換論理式
+第 $i$ ビットのグレイコード $G_i$ は、バイナリの自身 $B_i$ と1つ上位ビット $B_{i+1}$ の排他的論理和（XOR）。
 
-$$G_i = B_i \oplus B_{i+1}$$
-$$\mathbf{G} = \mathbf{B} \oplus (\mathbf{B} \gg 1)$$
+$$G_i = B_i \oplus B_{i+1} \quad \Longleftrightarrow \quad \mathbf{G} = \mathbf{B} \oplus (\mathbf{B} \gg 1)$$
 
 ```scala
-val gray = bin ^ (bin >> 1) // わずか1行で変換可能！
+val gray = binReg ^ (binReg >> 1) // わずか1行で変換可能！
 ```
 
-### ハードウェア構成
 <p align="center">
-  <img src="figures/lecture04_gray_converter.svg" width="620">
+  <img src="figures/lecture04_gray_counter.svg" width="600">
 </p>
 
 <!-- Note:
-バイナリからグレイコードへの変換アルゴリズムです。
-数式で見ると難しそうに見えますが、ハードウェア的には「自分自身と、1ビット右シフトした値のXORを取る」だけです。
-Chiselでは `bin ^ (bin >> 1)` と書くだけで、図のような並列XORゲートアレイが瞬時に合成されます。
+バイナリからグレイコードへの変換アルゴリズムと全体構成です。
+内部レジスタ binReg を標準バイナリカウンタとして1秒ごとに +1 進め、その出力を `binReg ^ (binReg >> 1)` のXORゲートアレイに通すことで、グレイコード `gray` を生成します。
 -->
 
 ---
 
-## 12. グレイコード・カウンタのアーキテクチャ
+## 12. グレイコード・カウンタのChisel実装 (`GrayCodeCounter.scala`)
 
-内部に通常のバイナリカウンタを保持し、出力段でグレイコードへ変換するのが最も面積効率と速度に優れます。
+```scala
+class GrayCodeCounter(val width: Int = 4, val clkFreq: Int = 9000000) extends Module {
+  val io = IO(new Bundle {
+    val en     = Input(Bool())
+    val clear  = Input(Bool())
+    val runLED = Output(Bool())
+    val gray   = Output(UInt(4.W))
+    val bin    = Output(UInt(4.W))
+  })
+  val halfPeriod = clkFreq / 2; val fullPeriod = clkFreq
+  val cntReg = RegInit(0.U(log2Ceil(clkFreq).W))
+  val binReg = RegInit(0.U(width.W))
+  val ledReg = RegInit(false.B)
+  val enGrayCodeCounter = WireDefault(false.B)
 
-<p align="center">
-  <img src="figures/lecture04_gray_counter.svg" width="640">
-</p>
+  // 1. 9MHz分周カウンタ更新論理 & 1秒ストローブ生成
+  when(io.clear) { cntReg := 0.U }.elsewhen(io.en) {
+    when(cntReg === (clkFreq - 1).U) { cntReg := 0.U }.otherwise { cntReg := cntReg + 1.U }
+  }
+  enGrayCodeCounter := io.en && (cntReg === (fullPeriod - 1).U)
 
-- 内部レジスタはシンプルな `binReg + 1.U` でインクリメント。
-- 出力段の1段のXORゲートアレイを経て、常にハミング距離1の `gray` を出力。
+  // 2. バイナリカウンタ更新論理 (1秒毎に +1)
+  when(io.clear) { binReg := 0.U }.elsewhen(enGrayCodeCounter) { binReg := binReg + 1.U }
+
+  // 3. LED点滅更新論理 & 4. グレイコード変換・負論理出力
+  when(io.clear) { ledReg := false.B }.elsewhen(io.en) {
+    when(cntReg === (halfPeriod - 1).U || cntReg === (fullPeriod - 1).U) { ledReg := !ledReg }
+  }
+  val gray = binReg ^ (binReg >> 1)
+  io.gray   := ~gray
+  io.bin    := ~binReg
+  io.runLED := ~ledReg
+}
+```
 
 <!-- Note:
-グレイコードカウンタの設計手法です。
-グレイコードのまま次の値を計算する次状態論理を組むことも可能ですが、式が非常に複雑になります。
-実務では、内部レジスタを標準バイナリカウンタとして進め、その出力を1段のXOR回路を通してグレイコードとして取り出す方式が最も標準的で信頼性が高くなります。
+Implement/Lab04/assignment3/GrayCodeCounter.scala の完全実装です。
+1秒パルス enGrayCodeCounter によって内部バイナリレジスタ binReg を +1.U ずつカウントアップします。
+そして val gray = binReg ^ (binReg >> 1) でグレイコードに変換し、TeCボードのLED（DATA_LEDおよびADDR_LED等）に合わせて負論理（~gray, ~binReg, ~ledReg）で出力します。
+なお、ビットごとの反転（~）を行っても、隣接状態間で変化するビット数（ハミング距離＝1）は全く変わらず保たれます。
 -->
 
 ---
@@ -376,57 +428,54 @@ Chiselでは `bin ^ (bin >> 1)` と書くだけで、図のような並列XORゲ
 
 <!-- Note:
 4種類のカウンタの比較表です。
-受講者の皆さんが将来ハードウェアを設計する際、どのカウンタを採用すべきかの指針となります。
-ビット数をケチりたいならバイナリ、とにかく最高クロック周波数で動かしたいならRing、グリッチを絶対に許容できないセンサ系やFIFOポインタならグレイコード、というように適材適所で使い分けます。
+ビット数を節約したいならバイナリ、とにかく最高クロック周波数でデコーダなしに動かしたいならRing、その半分のFF数でグリッチフリーにしたいならJohnson、全2^N状態をハミング距離1で巡回したいならグレイコード、というように適材適所で使い分けます。
 -->
 
 ---
 
-## 14. 順序回路におけるグリッチのメカニズム
+## 14. 実機FPGA (TeCボード) 配線仕様（UCF対応表）
 
-なぜ多ビット変化は危険なのか？
+各課題の `.ucf` ファイルに基づき、TeCボードのスイッチ・LEDへ接続して1秒ごとの状態遷移を確認します。
 
-```
-バイナリ遷移 (01 -> 10) の物理波形:
-bit 0: ──‾‾‾‾‾‾‾‾\_______  (立ち下がりがわずかに遅れた場合)
-bit 1: _________/‾‾‾‾‾‾‾‾  (立ち上がりが早い)
-過渡状態:   [01]   [11]   [10]  <── 一瞬だけ "11" が出現！
-```
+| 信号名 | 課題1 (`Ring`) | 課題2 (`Johnson`) | 課題3 (`GrayCode`) | TeCボード端子・ピン番号 |
+| :--- | :---: | :---: | :---: | :--- |
+| `clock` | ○ | ○ | ○ | `CLK_IN` (`P55`: 9MHz) |
+| `io_en` | ○ | ○ | ○ | `RUN_SW` (`P16` \| PULLUP) |
+| `io_clear` | ○ | ○ | ○ | `RESET_SW` (`P120` \| PULLUP) |
+| `io_runLED` | ○ | ○ | ○ | `RUN_LED` (`P43`: 0.5秒反転) |
+| `io_out[3:0]` / `io_gray[3:0]` | `io_out[3:0]` | `io_out[3:0]` | `io_gray[3:0]` | `DATA_LED[3:0]` (`P62, P61, P59, P58`) |
+| `io_bin[3:0]` | — | — | `io_bin[3:0]` | 拡張LED端子 (`P87, P85, P84, P83`) |
 
-- この一瞬の `11` が後段の組合せ回路を通ると、予期せぬ**グリッチパルス**となって誤動作を引き起こす。
-- **1ビットのみ変化するカウンタ (Johnson / Gray)** はこの過渡状態が原理的に存在しない。
+- **負論理LED表示のポイント**: TeCボードのLEDは `0` で点灯するため、実機書き込み時は `~state` / `~gray` / `~binReg` と反転出力することで、ビット `1` の位置が点灯します。
 
 <!-- Note:
-グリッチ発生のメカニズムです。
-物理的な配線やトランジスタには必ず遅延のバラツキがあります。
-01から10に切り替わるとき、bit1が立ち上がるタイミングとbit0が立ち下がるタイミングが1ピコ秒でもズレると、一瞬だけ「11」という偽の状態が現れます。
-これが後段のクロックやリセットに繋がっていると、致命的な誤動作を引き起こします。
+Implement/Lab04 配下の各 .ucf ファイルに対応したTeCボードのピン配置表です。
+3つの課題すべてで、clockはP55、io_enはP16（RUN_SW）、io_clearはP120（RESET_SW）、io_runLEDはP43（RUN_LED）に共通接続します。
+そしてRingとJohnsonの io_out[3:0]、およびGrayCodeの io_gray[3:0] は DATA_LED（P62, P61, P59, P58）に接続し、GrayCodeのバイナリ比較出力 io_bin[3:0] は P87, P85, P84, P83 に接続します。
 -->
 
 ---
 
 ## 15. 本日の演習課題 (90分)
 
-演習は**基本問題**と**発展問題**の2段階構成です。
+演習は**基本問題（2問）**と**発展問題（1問）**の構成です（テスト時は `clkFreq = 4` で高速検証）。
 
 ### 基本問題（必須 / 目安45〜50分）
-1. **`RingCounter`**:
-   - 下位ビットから上位ビットへのシフトと、最上位ビットを最下位ビットへ戻す1-hot循環シフトレジスタの実装
-2. **`JohnsonCounter`**:
-   - 最上位ビットの反転帰還による $2N$（8状態）巡回カウンタの実装
+1. **課題1: `RingCounter(width = 4, clkFreq = 9000000)`**:
+   - 9MHz分周による1秒パルス `enRingCounter` の生成と、`clear` 時の `1.U` 初期化
+   - 下位ビットから上位ビットへのシフトとMSB帰還 (`Cat(state(width - 2, 0), state(width - 1))`)
+2. **課題2: `JohnsonCounter(width = 4, clkFreq = 9000000)`**:
+   - 1秒パルス `enJohnsonCounter` の生成と、`clear` 時の `0.U` 初期化
+   - 最上位ビットの反転帰還 (`Cat(state(width - 2, 0), ~state(width - 1))`) による8状態巡回
 
-### 確認課題
-- **`GrayCodeCounter`**:
-  - 内部バイナリカウンタとグレイコード変換回路の統合
-  - 全遷移におけるハミング距離1動作の確認
-
-### バッファ (5〜10分)
-- コード整形、テスト実行、質疑応答
+### 発展問題（推奨 / 目安30〜35分）
+3. **課題3: `GrayCodeCounter(width = 4, clkFreq = 9000000)`**:
+   - 1秒パルス `enGrayCodeCounter` によるバイナリカウントと `binReg ^ (binReg >> 1)` 変換
 
 <!-- Note:
 演習の案内です。
-基本問題では、4ビットのRingCounterおよびJohnsonCounterを実装し、それぞれの状態遷移（4状態巡回および8状態巡回）をシミュレーションで確認してください。
-発展問題ではグレイコードカウンタに挑戦し、隣接コードが1ビットしか変わらないことを波形で確かめてください。
+テストベンチ（RingCountertb, JohnsonCountertb, GrayCodeCountertb）では clkFreq = 4 を渡して4クロック＝1秒として高速にシミュレーション検証を行います。
+テストに通ったら VerilogGenerator で SystemVerilog を生成し、実機での動作も確認してください。
 -->
 
 ---
@@ -437,15 +486,14 @@ bit 1: _________/‾‾‾‾‾‾‾‾  (立ち上がりが早い)
 1. シフトレジスタは `Cat` とビットスライスで加算器なしに高速に構成できる。
 2. Ringカウンタは下位から上位へのシフトとMSB帰還による1-hot遷移で、**デコーダ不要・最高速動作**を実現する。
 3. JohnsonカウンタはMSBの反転帰還により $2N$ 状態を巡回し、2入力ANDでグリッチフリーにデコード可能。
-4. Ringカウンタは `1.U`、Johnsonカウンタは `0.U` の適切なリセット初期値 (`RegInit`) 設定が不可欠である。
+4. グレイコード・カウンタは `binReg ^ (binReg >> 1)` により全遷移で**ハミング距離1**を保証する。
+5. 実機動作では9MHz分周の1秒ストローブパルス（`enRingCounter` 等）を同期イネーブルとして用い、1秒ごとの状態遷移を駆動する。
 
 ### 次回予告: 第5回「60進カウンタの構造化設計」
-- モジュール階層化の基礎とインスタンス化 (`Module(new ...)`)
-- 非同期リップルクロックの厳禁と同期イネーブル桁上げ伝播
-- 10進×6進カスケードによる60進カウンタおよび時計コアの設計
+- モジュール階層化設計の基礎とインスタンス化 (`Module(new ...)`)
+- 非同期リップルクロックの厳禁と、`OneHzGenerator` + 10進 + 6進による60進カウンタ設計
 
 <!-- Note:
 第4回の講義は以上となります。
-特殊カウンタの持つ高速性と低ノイズ性、そして初期値設計の重要性を理解していただけたかと思います。
 それでは演習に移ります。Lab04の課題を開いて作業を開始してください。
 -->

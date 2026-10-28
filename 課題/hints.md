@@ -78,12 +78,13 @@
 ## 第4回: RingカウンタとJohnsonカウンタ
 
 ### 基本問題ヒント (`RingCounter`, `JohnsonCounter`)
-1. **Ringカウンタの循環シフト**: 4ビットRingカウンタは初期値を `1.U(4.W)`（`0001_2`）とし、クロック毎に下位ビット `state(width-2, 0)` を上位側へシフトしつつ、最上位ビット `state(width-1)` を最下位ビットへ帰還（`Cat(state(width-2, 0), state(width-1))`）させることで、`0001` $\to$ `0010` $\to$ `0100` $\to$ `1000` の4つの1-hot状態を巡回します。
-2. **Johnsonカウンタの帰還**: 最上位ビット `state(width-1)` を取り出し、それを反転した信号 `~state(width-1)` を下位ビット `state(width-2, 0)` と結合（`Cat(state(width-2, 0), ~state(width-1))`）して次状態レジスタへ入力します。
+1. **1秒ストローブパルスの生成**: 第3回と同様に、9MHzクロックを `cntReg` で数え、`enRingCounter := io.en && (cntReg === (fullPeriod - 1).U)`（Johnsonでは `enJohnsonCounter`）の1クロック幅パルスで状態レジスタ `state` を更新します（テスト時は `clkFreq = 4` が渡されます）。
+2. **Ringカウンタの循環シフト**: 初期値および `io.clear` 時の値を `1.U(width.W)`（`0001_2`）とし、`enRingCounter` 有効時に下位ビット `state(width-2, 0)` を上位側へシフトしつつ、最上位ビット `state(width-1)` を最下位ビットへ帰還（`Cat(state(width-2, 0), state(width-1))`）させることで、`0001` $\to$ `0010` $\to$ `0100` $\to$ `1000` の4つの1-hot状態を巡回します。
+3. **Johnsonカウンタの反転帰還**: 初期値および `io.clear` 時の値を `0.U(width.W)` とし、`enJohnsonCounter` 有効時に最上位ビットの反転 `~state(width-1)` を下位ビット `state(width-2, 0)` と結合（`Cat(state(width-2, 0), ~state(width-1))`）して8状態を巡回させます。
 
 ### 発展問題ヒント (`GrayCodeCounter`)
-1. **変換式の簡潔性**: バイナリコード $B$ からグレイコード $G$ への変換は $G = B \oplus (B \gg 1)$ で表されます。Chiselでは `val gray = bin ^ (bin >> 1)` と直感的に記述できます。
-2. **非同期ハザード耐性**: グレイコードは隣接する遷移で1ビットしか変化しないため、非同期回路との境界やFIFOのポインタ受け渡しでグリッチを生じない特長があります。内部カウンタ `bin` は標準同期カウンタとして進め、出力段で変換します。
+1. **変換式の簡潔性と負論理出力**: 1秒ストローブ `enGrayCodeCounter` で内部バイナリレジスタ `binReg` を `+1.U` し、バイナリからグレイコードへの変換 `val gray = binReg ^ (binReg >> 1)` を行います。出力は実機LEDに合わせて `io.gray := ~gray`, `io.bin := ~binReg`, `io.runLED := ~ledReg` とします。
+2. **非同期ハザード耐性**: グレイコードは隣接する遷移で1ビットしか変化しない（ビット反転 `~` してもハミング距離は 1 のまま）ため、非同期回路との境界やセンサ読み取りでグリッチを生じない特長があります。
 
 ---
 

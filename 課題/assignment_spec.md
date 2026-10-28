@@ -119,26 +119,30 @@
 
 ## 第4回: RingカウンタとJohnsonカウンタ (Ring & Johnson Counters)
 
-### 基本問題 (必須・目安45分): 4ビットRing & Johnsonカウンタ
-- **モジュール名**: `RingCounter(width: Int = 4)`
-  - **入力**: `en` (Bool)
-  - **出力**: `out` (UInt(width.W))
-  - **論理仕様**:
-    - リセット時: `1.U(width.W)`（`0001_2`: 1-hot）。
-    - `en` 有効時、下位ビットから上位ビットへシフトし、最上位ビット `state(width - 1)` を最下位ビットへ循環帰還（`Cat(state(width - 2, 0), state(width - 1))`）。
-- **モジュール名**: `JohnsonCounter(width: Int = 4)`
-  - **入力**: `en` (Bool)
-  - **出力**: `out` (UInt(width.W))
-  - **論理仕様**:
-    - リセット時: `0.U(width.W)`。
-    - 最上位ビットの反転 `~state(width - 1)` を最下位ビットに結合し、下位ビットから上位ビットへシフト。$2 \times width$ 個のユニークな状態を巡回。
-
-### 発展問題 (推奨・目安35分): 4ビット・グレイコード・カウンタ
-- **モジュール名**: `GrayCodeCounter`
+### 基本問題 (必須・目安45分): 4ビットRing & Johnsonカウンタ（1秒ストローブ連携）
+- **モジュール名**: `RingCounter(width: Int = 4, clkFreq: Int = 9000000)`
   - **入力**: `en` (Bool), `clear` (Bool)
-  - **出力**: `gray` (UInt(4.W)), `bin` (UInt(4.W))
+  - **出力**: `runLED` (Bool), `out` (UInt(width.W))
   - **論理仕様**:
-    - 内部に標準バイナリカウンタを保持し、バイナリからグレイコードへの変換論理 $gray = bin \oplus (bin \gg 1)$ を実装。
+    - 9MHzクロックを `cntReg` でカウントし、1秒に1クロック幅のストローブパルス `enRingCounter := io.en && (cntReg === (fullPeriod - 1).U)` を生成。
+    - リセット時および `clear` 時: `state` を `1.U(width.W)`（`0001_2`: 1-hot）に初期化。
+    - `enRingCounter` 有効時、下位ビットから上位ビットへシフトし、最上位ビット `state(width - 1)` を最下位ビットへ循環帰還（`Cat(state(width - 2, 0), state(width - 1))`）。
+    - `runLED` は 0.5秒ごとに反転し負論理（`~ledReg`）で出力。`out` は `state`（実機LED負論理点灯時は `~state`）を出力。
+- **モジュール名**: `JohnsonCounter(width: Int = 4, clkFreq: Int = 9000000)`
+  - **入力**: `en` (Bool), `clear` (Bool)
+  - **出力**: `runLED` (Bool), `out` (UInt(width.W))
+  - **論理仕様**:
+    - 1秒ストローブパルス `enJohnsonCounter := io.en && (cntReg === (fullPeriod - 1).U)` を生成。
+    - リセット時および `clear` 時: `state` を `0.U(width.W)` に初期化。
+    - `enJohnsonCounter` 有効時、最上位ビットの反転 `~state(width - 1)` を最下位ビットに結合し、下位ビットから上位ビットへシフト（`Cat(state(width - 2, 0), ~state(width - 1))`）。$2 \times width$ 個のユニークな状態を巡回。
+
+### 発展問題 (推奨・目安35分): 4ビット・グレイコード・カウンタ（1秒ストローブ連携）
+- **モジュール名**: `GrayCodeCounter(width: Int = 4, clkFreq: Int = 9000000)`
+  - **入力**: `en` (Bool), `clear` (Bool)
+  - **出力**: `runLED` (Bool), `gray` (UInt(4.W)), `bin` (UInt(4.W))
+  - **論理仕様**:
+    - 1秒ストローブパルス `enGrayCodeCounter` ごとに内部バイナリカウンタ `binReg` を `+1.U` インクリメント（`clear` 時は `0.U`）。
+    - バイナリからグレイコードへの変換論理 `val gray = binReg ^ (binReg >> 1)` を実装し、負論理（`io.gray := ~gray`, `io.bin := ~binReg`, `io.runLED := ~ledReg`）で出力。
     - 隣接するカウント遷移において、出力 `gray` のハミング距離（変化ビット数）が常に厳密に 1 であることを保証。
 
 ---
