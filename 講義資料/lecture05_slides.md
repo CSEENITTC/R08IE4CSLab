@@ -301,18 +301,18 @@ secUnitsが9である1秒間（900万クロックの間）ずっと6進カウン
 1. **1Hz生成 (`oneHz`)**: `oneHz.io.en := io.en`, `oneHz.io.clear := io.clear`
 2. **10進カウンタ (`u10`)**: `u10.io.en := oneHz.io.oneHzPulse`, `u10.io.clear := io.clear`
 3. **6進カウンタ (`u6`)**: `u6.io.en := u10.io.rollover`, `u6.io.clear := io.clear`
-4. **全体の桁上げ (`io.cout`)**: `u6.io.rollover`（59秒完了時の1クロックパルス）
+4. **外部出力接続**: `io.secUnits := u10.io.count`, `io.secTens := u6.io.count`, `io.cout := u6.io.rollover`, `io.runLED := oneHz.io.ledBlink`
 
 <!-- Note:
 Counter60 の全体ブロック図です。
 Counter60という大きな箱の中に、OneHzGenerator、10進カウンタ(u10)、6進カウンタ(u6)の3つのサブモジュールが綺麗に並んでいます。
 親の io.en は oneHz に入り、oneHz から出た oneHzPulse が u10 の en に入り、u10 から出た rollover が u6 の en に入り、u6 から出た rollover が親の io.cout として外に出ていきます。
-まさにバケツリレーのように1クロック幅の同期イネーブルパルスが伝播していく美しい構造です。
+また oneHz の ledBlink 出力も親の io.runLED として取り出し、FPGAボード上の RUN_LED で0.5秒ごとの点滅を確認できるようにします。
 -->
 
 ---
 
-## 11. `Counter60` のChisel完全実装
+## 11. `Counter60` のChisel完全実装 (`assignment1`)
 
 ```scala
 class Counter60(val clkFreq: Int = 9000000) extends Module {
@@ -321,6 +321,7 @@ class Counter60(val clkFreq: Int = 9000000) extends Module {
     val clear    = Input(Bool())
     val secUnits = Output(UInt(4.W)) // 1の位 (0〜9)
     val secTens  = Output(UInt(3.W)) // 10の位 (0〜5)
+    val runLED   = Output(Bool())    // 動作インジケータ (0.5秒反転)
     val cout     = Output(Bool())    // 59秒の最後の1クロックでアサート
   })
 
@@ -330,21 +331,17 @@ class Counter60(val clkFreq: Int = 9000000) extends Module {
   val u6    = Module(new ModuloNCounter(6, 3))  // 6進カウンタ
 
   // 2. 1Hz生成モジュールの配線
-  oneHz.io.en    := io.en
-  oneHz.io.clear := io.clear
+  oneHz.io.clear := io.clear; oneHz.io.en := io.en
 
-  // 3. 10進カウンタの配線 (1Hzパルスでカウントアップ)
-  u10.io.en    := oneHz.io.oneHzPulse
-  u10.io.clear := io.clear
+  // 3. 10進・6進カウンタの配線 (同期イネーブル伝播)
+  u10.io.clear := io.clear; u10.io.en := oneHz.io.oneHzPulse
+  u6.io.clear  := io.clear; u6.io.en  := u10.io.rollover
 
-  // 4. 6進カウンタの配線 (10進の桁上げパルスでカウントアップ)
-  u6.io.en    := u10.io.rollover
-  u6.io.clear := io.clear
-
-  // 5. 外部出力ポートへの接続
+  // 4. 外部出力ポートへの接続
   io.secUnits := u10.io.count
   io.secTens  := u6.io.count
   io.cout     := u6.io.rollover
+  io.runLED   := oneHz.io.ledBlink
 }
 ```
 
@@ -352,97 +349,122 @@ class Counter60(val clkFreq: Int = 9000000) extends Module {
 Counter60 のChisel実装コードです。
 見ての通り、Counter60 自身の中には RegInit も when 文も1つもありません！
 行っているのは、3つのサブモジュールを Module(new ...) で実体化し、それぞれの io ポートを := で結線しているだけです。
-これが階層化設計の威力です。各部品の内部論理はカプセル化されており、トップモジュールは「どの部品とどの部品をどう繋ぐか」という構造（アーキテクチャ）だけに集中できます。
+assignment1 ではこの Counter60 を SystemVerilog に変換し、FPGAボード（TeCボード）にプログラムして実機動作を確認します。
 -->
 
 ---
 
-## 12. 階層化設計におけるシミュレーションの工夫
+## 12. `assignment1` (`Counter60`) の実機FPGAボード動作確認とUCF配線
 
-### パラメータの階層引き渡し (`clkFreq`)
-- 実機（9MHz）では1秒進めるのに **9,000,000 クロック**必要であり、そのまま60秒間シミュレーションすると $5.4 \times 10^8$ サイクルかかり長時間待たされる。
-- `Counter60(val clkFreq: Int = 9000000)` のように親モジュールもパラメータを受け取り、子の `OneHzGenerator(clkFreq)` に引き渡す設計にしておけば：
-  - **実機合成時**: `new Counter60()` （デフォルト9MHz）
-  - **テスト時**: `new Counter60(clkFreq = 4)` （4クロック＝1秒として超高速検証！）
+`assignment1` は **FPGAボード（TeCボード）にプログラムして実機で動作を確認**します。
+
+### `Counter60.ucf` ピン配置仕様
+| 信号名 | TeCボード端子 | ピン番号 | 役割・動作 |
+| :--- | :--- | :---: | :--- |
+| `clock` | `CLK_IN` | `P55` | 9MHz オンボードシステムクロック |
+| `io_en` / `io_clear` | `RUN_SW` / `RESET_SW` | `P16` / `P120` | カウントイネーブル / 同期クリア (`PULLUP`) |
+| `io_runLED` | `RUN_LED` | `P43` | 動作インジケータ（0.5秒ごとに点滅） |
+| `io_secUnits[3:0]` | `DATA_LED[3:0]` | `P62, P61, P59, P58` | 秒の1の位（`0`〜`9` を1秒ごとにカウント） |
+| `io_secTens[2:0]` | 拡張LED端子 | `P85, P84, P83` | 秒の10の位（`0`〜`5` を10秒ごとにカウント） |
+
+- ※ シミュレーション単体テスト（`Counter60tb.scala`）では、`testClkFreq = 4` を渡して高速に00〜59秒の遷移を検証します。
+
+<!-- Note:
+assignment1の実機配線仕様です。
+1の位 io_secUnits[3:0] を DATA_LED（P62, P61, P59, P58）に、10の位 io_secTens[2:0] を P85, P84, P83 に、そして io_runLED を P43（RUN_LED）に接続します。
+FPGAボードに書き込んで RUN_SW をオンにし、1秒ごとに1の位が進み、9の次で0に戻ると同時に10の位が1増える60進動作を実機で確認してください。
+-->
+
+---
+
+## 13. 確認課題 (`assignment2`): 24時間デジタル時計コア (`DigitalClockCore`)
+
+カスケード構造をさらに多段に拡張し、時 (`0`〜`23`)・分 (`0`〜`59`)・秒 (`0`〜`59`) を統合した時計コアを構築します。
+
+<p align="center">
+  <img src="figures/lecture06_digital_clock.svg" width="660">
+</p>
 
 ```scala
-// テストベンチ側: clkFreq = 4 を指定してわずか240クロックで60秒分を完全検証！
-test(new Counter60(clkFreq = 4)) { dut => ... }
+class DigitalClockCore extends Module {
+  val io = IO(new Bundle {
+    val enSec = Input(Bool()); val clear = Input(Bool())
+    val sec = Output(UInt(6.W)); val min = Output(UInt(6.W)); val hour = Output(UInt(5.W))
+  })
+  val secCounter = Module(new ModuloNCounter(60, 6))
+  val minCounter = Module(new ModuloNCounter(60, 6))
+  val hrsCounter = Module(new ModuloNCounter(24, 5))
+
+  secCounter.io.clear := io.clear; secCounter.io.en := io.enSec
+  minCounter.io.clear := io.clear; minCounter.io.en := io.enSec && secCounter.io.rollover
+  hrsCounter.io.clear := io.clear; hrsCounter.io.en := io.enSec && secCounter.io.rollover && minCounter.io.rollover
+
+  io.sec := secCounter.io.count; io.min := minCounter.io.count; io.hour := hrsCounter.io.count
+}
 ```
 
 <!-- Note:
-階層化設計におけるテストのテクニックです。
-実機用の900万分周のまま60秒分のテストベンチを回すと、5億4000万クロックもステップ実行することになり、テストが終わらなくなってしまいます。
-そこで Counter60 のコンストラクタ引数として clkFreq を受け取り、それを内部の OneHzGenerator(clkFreq) にそのまま渡せるようにしておきます。
-するとテストベンチでは new Counter60(clkFreq = 4) のように小さな値を指定でき、たった4クロックで1秒パルスが出るため、一瞬で00秒から59秒までの全遷移をテストできます。
--->
-
----
-
-## 13. 発展設計: 24時間デジタル時計コア (`DigitalClockCore`)
-
-カスケード構造をさらに多段に拡張し、時・分・秒を統合した時計システムを構築する。
-
-<p align="center">
-  <img src="figures/lecture06_digital_clock.svg" width="700">
-</p>
-
-### カスケード連鎖の設計
-- **秒カウンタ**: 1秒パルス `enSec` で動作（0〜59）。
-- **分カウンタ**: 秒カウンタの桁上げをイネーブルに入力（0〜59）。
-- **時カウンタ**: 秒桁上げと分桁上げの論理積で動作（0〜23）。
-
-<!-- Note:
-確認課題であるデジタル時計コアのアーキテクチャです。
+確認課題（assignment2）である24時間デジタル時計コアのアーキテクチャと実装です。
 秒モジュール（60進）、分モジュール（60進）、時モジュール（24進）が同じ同期イネーブル方式で数珠繋ぎになっています。
-時カウンタが進む条件は「秒が59かつ分が59かつenSec」の瞬間です。
-23時59分59秒の次の秒で、時計全体が 00:00:00 に同期クリアされます。
+時カウンタが進む条件は「io.enSec && secCounter.io.rollover && minCounter.io.rollover」、すなわち59分59秒の最後のサイクルです。
 -->
 
 ---
 
-## 14. モジュール階層化設計の3大原則
+## 14. `assignment2` (`DigitalClockCore`) の長時間シミュレーション検証
 
-良いハードウェア階層化のための設計原則：
+`assignment2` は **シミュレーション（`sbt test`）で24時間時計の動作を確認**します。約99万サイクル（$999 \times 999 = 998,001$ 秒 $\approx 11.5$ 日分）の連続カウントを実行するため、テストベンチ（`DigitalClockCoretb.scala`）では以下の3つの工夫を行っています。
 
-1. **高凝集・低結合 (High Cohesion, Low Coupling)**:
-   - 1つのサブモジュールには1つの明確な役割（分周、10進計数、6進計数）だけを持たせ、モジュール間の配線（インターフェース）を最小限の信号（`en`, `clear`, `rollover`）に絞る。
-2. **再利用性とパラメータ化 (Parametric Reusability)**:
-   - `ModuloNCounter(n, width)` のように汎用パラメータを持たせ、同一の検証済みモジュールを複数箇所（10進・6進・24進）で使い回す。
-3. **同期境界の一貫性 (Single Clock Domain)**:
-   - 全階層で単一クロックを共有し、1クロック幅の同期イネーブルパルスでモジュール間の動作タイミングを調停する。
+```scala
+class DigitalClockCoretb extends AnyFlatSpec with ChiselScalatestTester {
+  it should "cascade seconds to minutes to hours synchronously" in {
+    test(new DigitalClockCore) { dut => // 1. WriteVcdAnnotation を削除 (メモリ不足防止)
+      dut.io.clear.poke(false.B)
+      dut.io.enSec.poke(true.B)
+      dut.clock.setTimeout(0)           // 2. サイクル数のタイムアウト制限を解除
+
+      for (_ <- 0 until 999) {
+        for (_ <- 0 until 999) {
+          dut.clock.step(1)
+        }
+        // 3. 実際の表示内容に合わせて「Simulated time」を出力
+        println(s"Simulated time: ${dut.io.hour.peekInt()}:${dut.io.min.peekInt()}:${dut.io.sec.peekInt()}")
+      }
+    }
+  }
+}
+```
+
+1. **`dut.clock.setTimeout(0)`**: ChiselTestのデフォルト上限（1000サイクル）によるタイムアウトエラーを解除。
+2. **`WriteVcdAnnotation` の削除**: 約99万サイクルの長時間波形保存による大量のメモリ消費（OutOfMemory）を回避。
+3. **`Simulated time` のコンソール表示**: 999サイクルごとに現在の `hour:min:sec` を表示し、桁上げと24時間周期の巡回を確認。
 
 <!-- Note:
-ハードウェア階層化設計のまとめとなる3大原則です。
-1つ目は高凝集・低結合。役割を明確に分け、ピン数を最小限にします。
-2つ目はパラメータ化による再利用。1つのModuloNCounterが10進にも6進にもなります。
-3つ目は単一クロックと同期イネーブルの一貫性です。この3つを守ることで、どれほど大規模な回路になっても破綻せずに設計できます。
+assignment2のテストベンチにおける重要な解説です。
+24時間（86,400秒）以上の動作をシミュレーションで確認するため、999×999＝約99万8000サイクルを実行します。
+このとき、デフォルトのままだと1000サイクルでタイムアウトしてしまうため、dut.clock.setTimeout(0) でタイムアウトを解除します。
+また、約99万サイクルもの波形データ（VCDファイル）を保存すると大量のメモリを消費してメモリ不足になるため、WriteVcdAnnotation を削除しています。
+そしてコンソールに「Simulated time: 時:分:秒」を表示させることで、秒→分→時の繰り上がりと23:59:59からのラップアラウンドを確認します。
 -->
 
 ---
 
 ## 15. 本日の演習課題 (90分)
 
-演習は**基本問題**と**確認課題**の2段階構成です。
+演習は**基本問題 (`assignment1`)** と**確認課題 (`assignment2`)** の2段階構成です。
 
-### 基本問題（必須 / 目安45〜50分）
-- **`Counter60`**:
-  - `OneHzGenerator(clkFreq)`、`ModuloNCounter(10, 4)`、`ModuloNCounter(6, 3)` の3つのサブモジュールをインスタンス化
-  - `oneHzPulse` $\to$ 10進 `en`、10進 `rollover` $\to$ 6進 `en` の同期イネーブル接続
-  - 1の位 (`secUnits`)、10の位 (`secTens`)、および60進桁上げ (`cout`) の出力
+### 基本問題 (`assignment1` / 必須・目安45〜50分): `Counter60`
+- **実装**: `OneHzGenerator(clkFreq)`、`ModuloNCounter(10, 4)`、`ModuloNCounter(6, 3)` の3つのサブモジュールをインスタンス化し、同期イネーブル接続で `secUnits`, `secTens`, `runLED`, `cout` を出力。
+- **動作確認**: `sbt test` で検証後、`sbt run` でSystemVerilogを生成し、**FPGAボード（TeCボード）にプログラムして実機動作を確認**します。
 
-### 確認課題（推奨 / 目安30〜35分）
-- **`DigitalClockCore`**:
-  - 秒(60進)、分(60進)、時(24進)の3段同期カスケード結合
-  - 23:59:59 $\to$ 00:00:00 の完全自動巡回動作の検証
-
-### バッファ (5〜10分)
-- コード整形、`sbt test` によるテスト実行、波形確認
+### 確認課題 (`assignment2` / 推奨・目安30〜35分): `DigitalClockCore`
+- **実装**: 秒(60進)、分(60進)、時(24進)の3段同期カスケード結合。
+- **動作確認**: **シミュレーション（`sbt test`）で動作を確認**します（`dut.clock.setTimeout(0)` でタイムアウト解除、`WriteVcdAnnotation` なし、`Simulated time` 表示で約99万サイクルを実行）。
 
 <!-- Note:
-演習の案内です。
-まずは基本問題で、1Hz生成モジュール・10進カウンタ・6進カウンタの3つを階層結合した Counter60 を完成させましょう。
-その後、確認課題で時・分・秒のデジタル時計コアに進んでください。
+演習の進め方です。
+assignment1の Counter60 は、シミュレーションだけでなく実際にFPGAボードにプログラムしてLEDで60進カウントを確認します。
+assignment2の DigitalClockCore は、ピン数の関係もありシミュレーション上で約99万サイクル回して、コンソールに出力される Simulated time で24時間時計の動作を確認します。
 -->
 
 ---

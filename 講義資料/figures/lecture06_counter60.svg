@@ -66,7 +66,7 @@
 
   <!-- Outputs -->
   <line x1="145" y1="130" x2="145" y2="185" class="wire" marker-end="url(#arrow)"/>
-  <text x="145" y="202" class="wire-label" text-anchor="middle">io.ledBlink</text>
+  <text x="145" y="202" class="wire-label" text-anchor="middle">io.runLED (ledBlink)</text>
 
   <line x1="405" y1="130" x2="405" y2="185" class="wire" marker-end="url(#arrow)"/>
   <text x="405" y="202" class="wire-label" text-anchor="middle">io.secUnits (4bit)</text>

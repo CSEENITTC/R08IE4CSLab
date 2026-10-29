@@ -90,21 +90,25 @@
 
 ## 第5回: 60進カウンタの構造化設計
 
-### 基本問題ヒント (`Counter60`)
-1. **3つのサブモジュールのインスタンス化**:
+### 基本問題ヒント (`assignment1`: `Counter60` — FPGAボードで動作確認)
+1. **3つのサブモジュールのインスタンス化と出力接続**:
    ```scala
    val oneHz = Module(new OneHzGenerator(clkFreq))
    val u10   = Module(new ModuloNCounter(10, 4))
    val u6    = Module(new ModuloNCounter(6, 3))
    ```
+   `io.runLED := oneHz.io.ledBlink` を接続し、FPGAボード上の `RUN_LED` で0.5秒反転動作を確認できるようにします。
 2. **絶対禁止事項（非同期クロック）**: `OneHzGenerator` の出力や 10進カウンタの桁上げ出力を、次段カウンタの `clock` 入力に接続してはいけません（クロックスキューやグリッチ誤動作の原因）。
-3. **同期イネーブル伝播**: 3つのサブモジュールすべてに同一のシステムクロックが自動供給されます。`oneHz.io.oneHzPulse` を `u10.io.en` に接続し、`u10.io.rollover` を `u6.io.en` に接続することで、1秒ごと・10秒ごとの完全同期カウントアップを実現します。
+3. **同期イネーブル伝播と実機確認**: `oneHz.io.oneHzPulse` を `u10.io.en` に接続し、`u10.io.rollover` を `u6.io.en` に接続します。`sbt run` でSystemVerilogを生成し、`Counter60.ucf` を用いてFPGAボード（TeCボード）にプログラムして実機動作を確認します。
 
-### 確認課題ヒント (`DigitalClockCore`)
+### 確認課題ヒント (`assignment2`: `DigitalClockCore` — シミュレーションで動作確認)
 1. **階層カスケードの連鎖**:
-   - 秒の桁上げ: 59秒時に発生 $\to$ 分カウンタのイネーブルへ
-   - 分の桁上げ: 59分59秒時に発生 $\to$ 時カウンタのイネーブルへ
-2. **24進カウンタの境界条件**: 時カウンタは24進 (`ModuloNCounter(24, 5)`) です。23時59分59秒の次のクロックで全カウンタが 00:00:00 に同期してクリアされることを確認してください。
+   - 秒の桁上げ: `io.enSec && secCounter.io.rollover` $\to$ 分カウンタのイネーブルへ
+   - 分の桁上げ: `io.enSec && secCounter.io.rollover && minCounter.io.rollover` $\to$ 時カウンタのイネーブルへ
+2. **長時間シミュレーションの設定 (`DigitalClockCoretb.scala`)**:
+   - `dut.clock.setTimeout(0)` でサイクル数のタイムアウトを解除します。
+   - 約99万サイクル（$999 \times 999$）の実行でメモリ不足にならないよう、`WriteVcdAnnotation` を削除します（長時間の波形保存は大量のメモリを使います）。
+   - コンソール出力は実際の内容に合わせて `Simulated time` と表示し、23時59分59秒から 0:0:0 への巡回を確認します。
 
 ---
 

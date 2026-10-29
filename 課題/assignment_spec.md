@@ -149,24 +149,33 @@
 
 ## 第5回: 60進カウンタの構造化設計 (Hierarchical 60-Counter)
 
-### 基本問題 (必須・目安45分): 1Hz生成 + 10進 + 6進による階層化 60進カウンタ
+### 基本問題 (`assignment1` / 必須・目安45分): 1Hz生成 + 10進 + 6進による階層化 60進カウンタ
+- **動作確認方法**: **FPGAボード（TeCボード）にプログラムして実機で動作を確認**します（単体テストは `sbt test`）。
 - **モジュール名**: `Counter60(clkFreq: Int = 9000000)`
   - **構成**: 1Hzの`en`信号を出すモジュール (`OneHzGenerator(clkFreq)`)、10進カウンタ (`ModuloNCounter(10, 4)`)、6進カウンタ (`ModuloNCounter(6, 3)`) の3つのサブモジュールによる階層化構成
   - **入力**: `en` (Bool), `clear` (Bool)
-  - **出力**: `secUnits` (UInt(4.W)), `secTens` (UInt(3.W)), `cout` (Bool)
+  - **出力**: `secUnits` (UInt(4.W)), `secTens` (UInt(3.W)), `runLED` (Bool), `cout` (Bool)
   - **論理仕様**:
     - **非同期リップルクロックの厳禁**: 全サブモジュールを共通のシステムクロックで駆動。
-    - `OneHzGenerator` の `oneHzPulse` 出力を 10進カウンタの `en` 入力に接続。
+    - `OneHzGenerator` の `oneHzPulse` 出力を 10進カウンタの `en` 入力に接続し、`ledBlink` 出力を `io.runLED` に接続。
     - 10進カウンタの `rollover` 出力を 6進カウンタの `en` 入力に接続。
     - `cout` は 59秒の最後の1クロックサイクル（`u6.io.rollover`）で `true.B` をアサート。
+  - **実機FPGA (TeCボード) 配線 (`Counter60.ucf`)**:
+    - `clock` $\to$ `P55` (`CLK_IN`), `io_en` $\to$ `P16` (`RUN_SW` | PULLUP), `io_clear` $\to$ `P120` (`RESET_SW` | PULLUP)
+    - `io_runLED` $\to$ `P43` (`RUN_LED`), `io_secUnits[3:0]` $\to$ `P62, P61, P59, P58` (`DATA_LED[3:0]`), `io_secTens[2:0]` $\to$ `P85, P84, P83`
 
-### 確認課題 (推奨・目安35分): デジタル時計コア（時・分・秒 統合階層モジュール）
+### 確認課題 (`assignment2` / 推奨・目安35分): デジタル時計コア（時・分・秒 統合階層モジュール）
+- **動作確認方法**: **シミュレーション（`sbt test`）で動作を確認**します。
 - **モジュール名**: `DigitalClockCore`
   - **入力**: `enSec` (Bool: 1Hzパルス), `clear` (Bool)
   - **出力**: `sec` (UInt(6.W)), `min` (UInt(6.W)), `hour` (UInt(5.W))
   - **論理仕様**:
     - 秒(60進) $\to$ 分(60進) $\to$ 時(24進: 0〜23) の3段カスケード接続。
     - 各桁上げ信号が同期イネーブルとして正しく伝播し、23時59分59秒の次で 00:00:00 に同期リセットされる回路。
+  - **長時間シミュレーションの注意点 (`DigitalClockCoretb.scala`)**:
+    - `dut.clock.setTimeout(0)` でサイクル数のタイムアウトを解除します。
+    - 約99万サイクル（$999 \times 999$）の実行でメモリ不足にならないよう、`WriteVcdAnnotation` を削除します（長時間の波形保存は大量のメモリを使います）。
+    - 表示を実際の内容に合わせて `Simulated time`（`println(s"Simulated time: ${dut.io.hour.peekInt()}:${dut.io.min.peekInt()}:${dut.io.sec.peekInt()}")`）として出力します。
 
 ---
 

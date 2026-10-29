@@ -249,6 +249,7 @@ class Counter60(val clkFreq: Int = 9000000) extends Module {
     val clear    = Input(Bool())
     val secUnits = Output(UInt(4.W)) // 1の位 (0〜9)
     val secTens  = Output(UInt(3.W)) // 10の位 (0〜5)
+    val runLED   = Output(Bool())    // 0.5秒反転LED出力
     val cout     = Output(Bool())    // 59秒の最後の1クロックでアサート
   })
 
@@ -258,6 +259,7 @@ class Counter60(val clkFreq: Int = 9000000) extends Module {
   io.secUnits := 0.U
   io.secTens  := 0.U
   io.cout     := false.B
+  io.runLED   := false.B
 }
 
 // 発展問題: 24時間デジタル時計コア
