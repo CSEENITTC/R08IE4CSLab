@@ -181,28 +181,43 @@
 
 ## 第6回: 構造化設計とALU (Structured Hierarchical Design & ALU)
 
-### 基本問題1 (`assignment1` / 必須・目安30分): 算術ユニット (`ArithmeticUnit`)
+### 導入確認 (`assignment0`): TeCボード入出力回路 (`TeCIO`)
+- **モジュール名**: `TeCIO` (`assignment0/TeCIO.scala`)
+  - **入力**: `wd` (UInt(8.W): `DATA_SW[7:0]`), `op` (Bool), `weA` (Bool: `INC_SW`), `weB` (Bool: `DEC_SW`)
+  - **出力**: `rd` (UInt(8.W): `DATA_LED[7:0]`)
+  - **論理仕様**:
+    - `when(io.weA) { regA := io.wd }`、`when(io.weB) { regB := io.wd }` で2つの8ビットレジスタ `regA`, `regB` に書き込みデータを保持。
+    - `io.rd := Mux(io.op, regB, regA)` で選択出力。
+
+### 基本問題1 (`assignment1` / シミュレーション動作確認): 算術ユニット (`ArithmeticUnit`)
 - **モジュール名**: `ArithmeticUnit`
   - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `op` (Bool: `false.B`=ADD, `true.B`=SUB)
   - **出力**: `res` (UInt(8.W)), `cout` (Bool)
   - **論理仕様**:
     - 9ビット幅拡張演算子 (`+&`, `-&`) を用いて加算・減算を実行。
-    - 下位8ビット `ext(7, 0)` を `res` に、第8ビット `ext(8)` をキャリー／ボロー出力 `cout` に接続。
+    - 下位8ビット `ext(7, 0)` を `res` に、第8ビット `ext(8)` をキャリー／ボロー出力 `cout` に接続（シミュレーションのみで確認）。
 
-### 基本問題2 (`assignment2` / 必須・目安25分): 論理ユニット (`LogicUnit`)
+### 基本問題2 & 応用課題 (`assignment2` / シミュレーション + FPGAボード動作確認): 論理ユニット (`LogicUnit` + `TeCIO`)
 - **モジュール名**: `LogicUnit`
   - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `op` (UInt(2.W): `0`=AND, `1`=OR, `2`=XOR, `3`=NOT a)
   - **出力**: `res` (UInt(8.W))
   - **論理仕様**:
     - 透過ラッチ防止のため `WireDefault(0.U(8.W))` で初期化し、`switch / is` で4種類のビット論理演算を切り替え。
+- **応用課題（FPGAボード動作確認: `assignment2/TeCIO.scala` & `TeCIO.ucf`）**:
+  - `TeCIO` 内で `val lu = Module(new LogicUnit())` をインスタンス化し、実機スイッチ・LEDと以下のように接続して動作確認する：
+    - **`DATA_SW[7:0]`** (`P26, P27, P29, P30, P32, P33, P34, P35` $\to$ `io_wd[7:0]`): 書き込みデータを用意
+    - **`INC_SW`** (`P22` $\to$ `io_weA`): `regA` にデータを書き込み
+    - **`DEC_SW`** (`P23` $\to$ `io_weB`): `regB` にデータを書き込み
+    - **`BREAK_SW`, `STEP_SW`** (`P14` $\to$ `io_op[1]`, `P15` $\to$ `io_op[0]`): 2ビット `op` 演算選択
+    - **`DATA_LED[7:0]`** (`P81, P80, P79, P78, P62, P61, P59, P58` $\leftarrow$ `io_res[7:0]`): 演算結果を出力 (`io.res := ~lu.io.res`)
 
-### 発展問題 (`assignment3` / 推奨・目安30分): シフトユニット (`ShiftUnit`)
+### 発展問題 (`assignment3` / シミュレーション動作確認): シフトユニット (`ShiftUnit`)
 - **モジュール名**: `ShiftUnit`
   - **入力**: `a` (UInt(8.W)), `shamt` (UInt(3.W): シフト量 0〜7ビット), `op` (Bool: `false.B`=論理左シフト `<<`, `true.B`=論理右シフト `>>`)
   - **出力**: `res` (UInt(8.W))
   - **論理仕様**:
     - `op = false.B` のとき論理左シフト `(io.a << io.shamt)(7, 0)`（15ビット拡張結果から下位8ビットをスライス）。
-    - `op = true.B` のとき論理右シフト `io.a >> io.shamt`。
+    - `op = true.B` のとき論理右シフト `io.a >> io.shamt`（シミュレーションのみで確認）。
 
 ---
 

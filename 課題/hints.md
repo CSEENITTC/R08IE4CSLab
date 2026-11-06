@@ -120,9 +120,12 @@
 2. **結果とキャリーの分離**:
    - `io.res := ext(7, 0)` で下位8ビットを、`io.cout := ext(8)` で最上位ビット（第8ビット）を取り出します。
 
-### 基本問題2ヒント (`LogicUnit` — `assignment2`)
+### 基本問題2 & 応用課題ヒント (`LogicUnit` & `TeCIO` — `assignment2`)
 1. **透過ラッチ防止と `switch/is`**:
    - `val outW = WireDefault(0.U(8.W))` を宣言し、`switch(io.op)` 内で `0.U` (`&`), `1.U` (`|`), `2.U` (`^`), `3.U` (`~io.a`) を割り当てます。
+2. **FPGAボード上での動作確認 (`TeCIO.scala` & `TeCIO.ucf`)**:
+   - `assignment0` の `TeCIO` と同様に、`DATA_SW` (`io.wd`) で用意したデータを `INC_SW` (`io.weA`) で `regA` に、`DEC_SW` (`io.weB`) で `regB` に書き込みます。
+   - `val lu = Module(new LogicUnit())` に `regA`, `regB` および `BREAK_SW`/`STEP_SW` からの2ビット `io.op` を入力し、演算結果を負論理反転 (`io.res := ~lu.io.res`) して `DATA_LED` へ出力します。
 
 ### 発展問題ヒント (`ShiftUnit` — `assignment3`)
 1. **動的左シフトのビット幅拡張への対処**:

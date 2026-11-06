@@ -376,45 +376,46 @@ Chiselでは、8ビット結果 `out` に対して `out === 0.U` でZeroフラ�
 
 ---
 
-## 14. 階層化ALU設計のベストプラクティスまとめ
+## 14. 応用課題：`TeCIO` を用いた `assignment2` の実機動作確認
 
-<div class="box">
-<b>構造化データパス設計 4つの鉄則</b><br>
-1. <b>1モジュール・1責務</b>: 算術 (<code>ArithmeticUnit</code>)、論理 (<code>LogicUnit</code>)、シフト (<code>ShiftUnit</code>)、統合 (<code>StructuredALU</code>) を明確に分離する。<br>
-2. <b>ビット幅境界の明示</b>: 加減算の桁上げ抽出には <code>+&amp;</code> / <code>-&amp;</code> と9ビットワイヤを用い、動的左シフト <code>&lt;&lt;</code> では拡張されたビット幅から <code>(7, 0)</code> で下位8ビットをスライスする。<br>
-3. <b>透過ラッチの完全防止</b>: <code>switch</code> や <code>when</code> で分岐する組合せ回路の内部ワイヤには必ず <code>WireDefault(0.U(...))</code> を適用する。<br>
-4. <b>不要フラグのマスク</b>: 算術演算以外（論理演算・シフト演算）が選択されている時は、<code>carryOut</code> を <code>false.B</code> にマスクして誤動作を防ぐ。
-</div>
+TeCボードの `DATA_SW` は1組（8bit）のため、`TeCIO` 内の **`regA`**（`INC_SW` で書込）と **`regB`**（`DEC_SW` で書込）に値を保持させて `LogicUnit` へ入力する（`assignment0` でレジスタ書込・読出の基礎を確認）。
+
+<p align="center">
+  <img src="figures/lecture06_tecio_logic.svg" width="580">
+</p>
+
+| 信号名 (`TeCIO.ucf`) | TeCボード端子 | ピン番号 (`LOC`) | 機能・操作内容 |
+| :--- | :--- | :--- | :--- |
+| `io_wd[7:0]` | **`DATA_SW[7:0]`** | `P26,27,29,30,32,33,34,35` | **書き込みデータの用意** (8bit) |
+| `io_weA` / `io_weB` | **`INC_SW` / `DEC_SW`** | `P22` / `P23` | **`regA` / `regB` にデータを書き込み** |
+| `io_op[1:0]` | **`BREAK_SW`, `STEP_SW`** | `P14` (`op[1]`), `P15` (`op[0]`) | **2ビット `op`** (`00`:AND, `01`:OR, `10`:XOR, `11`:NOT) |
+| `io_res[7:0]` | **`DATA_LED[7:0]`** | `P81,80,79,78,62,61,59,58` | **演算結果を `DATA_LED` へ出力** (`~lu.io.res`) |
 
 <!-- Note:
-本日の設計原則のまとめです。
-特に2番の「ビット幅境界の明示」はChiselならではの重要ポイントです。
-算術ユニットでは `+&` / `-&` で9ビットに広げてから `ext(7, 0)` と `ext(8)` に分けること、シフトユニットでは `(io.a << io.shamt)(7, 0)` で8ビット幅に切り出すこと、この2つをしっかり押さえておきましょう。
+応用課題として、assignment2（LogicUnit）をFPGAボード（TeCボード）上で動作確認します。
+TeCボードには8ビットのDATA_SWが1組しかありません。そこでまず assignment0 の TeCIO.scala で、DATA_SWの値を INC_SW（weA）で regA に、DEC_SW（weB）で regB に書き込む仕組みを確認します。
+そして assignment2 の TeCIO.scala では、その regA と regB を LogicUnit の入力 a, b に繋ぎ、BREAK_SW と STEP_SW の2ビットを op として与え、演算結果を DATA_LED へ出力して実機確認します。
 -->
 
 ---
 
 ## 15. 本日の演習課題 (90分)
 
-本日の演習では、ALUを構成する3つの基本演算ユニットをそれぞれ独立したモジュールとして実装し、単体テスト (`sbt test`) で検証します。
+### 1. 導入確認 (`assignment0` / シミュレーション)
+- **`TeCIO`**: `regA`, `regB` への書き込み (`weA`, `weB`) と選択読み出し (`rd`) を `sbt test` で確認。
 
-### 基本問題（必須 / 目安50分）
-1. **課題1 (`assignment1`): 算術ユニット `ArithmeticUnit`**
-   - 入力: `a(8.W)`, `b(8.W)`, `op(Bool)` ／ 出力: `res(8.W)`, `cout(Bool)`
-   - `op = false.B`: 加算 (`io.a +& io.b`)、`op = true.B`: 減算 (`io.a -& io.b`)
-2. **課題2 (`assignment2`): 論理ユニット `LogicUnit`**
-   - 入力: `a(8.W)`, `b(8.W)`, `op(2.W)` ／ 出力: `res(8.W)`
-   - `WireDefault` + `switch(io.op)` による `AND` (`0.U`), `OR` (`1.U`), `XOR` (`2.U`), `NOT a` (`3.U`)
+### 2. 演算ユニット実装 (`assignment1`〜`assignment3` / シミュレーション)
+1. **`assignment1` (`ArithmeticUnit`)**: 加減算 (`+&` / `-&`) と `cout` 出力（**シミュレーションのみ**）
+2. **`assignment2` (`LogicUnit`)**: `WireDefault` + `switch(io.op)` による4種論理演算
+3. **`assignment3` (`ShiftUnit`)**: 論理左シフト `(io.a << io.shamt)(7, 0)` と右シフト `>>`（**シミュレーションのみ**）
 
-### 発展問題（推奨 / 目安35分）
-3. **課題3 (`assignment3`): シフトユニット `ShiftUnit`**
-   - 入力: `a(8.W)`, `shamt(3.W)`, `op(Bool)` ／ 出力: `res(8.W)`
-   - `op = false.B`: 論理左シフト `(io.a << io.shamt)(7, 0)`、`op = true.B`: 論理右シフト `io.a >> io.shamt`
+### 3. 応用課題 (`assignment2` / FPGAボード実機動作確認)
+- `assignment2/TeCIO.scala` を `sbt run` で合成し、TeCボード上で `DATA_SW`・`INC_SW` (`regA`)・`DEC_SW` (`regB`)・`BREAK_SW`/`STEP_SW` (`op` 2ビット) を操作して `DATA_LED` の出力を確認。
 
 <!-- Note:
-本日の演習課題は3つに分かれています。
-assignment1 は算術ユニット `ArithmeticUnit`、assignment2 は論理ユニット `LogicUnit`、assignment3 はシフトユニット `ShiftUnit` です。
-それぞれのフォルダにテストベンチ（ArithmeticUnittb.scala, LogicUnittb.scala, ShiftUnittb.scala）が用意されていますので、各フォルダで `sbt test` を実行して全テストケースにパスすることを確認してください。
+本日の演習の進め方です。
+まず assignment0 で TeCIO のレジスタ書き込み動作を確認したあと、assignment1（ArithmeticUnit）、assignment2（LogicUnit）、assignment3（ShiftUnit）をそれぞれ実装し、sbt test のシミュレーションで動作を確認してください（assignment1とassignment3はシミュレーションのみです）。
+そして応用課題として、assignment2 を TeCIO と組み合わせて FPGAボードに書き込み、実機のスイッチとLEDで論理演算の動作を確認してください。
 -->
 
 ---
