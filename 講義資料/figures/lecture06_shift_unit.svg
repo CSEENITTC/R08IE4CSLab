@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 200" width="100%" height="100%">
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #475569; text-anchor: middle; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 600; fill: #1e293b; }
+    .wire-label { font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 11px; fill: #2563eb; font-weight: 600; }
+    .wire { stroke: #2563eb; stroke-width: 2; fill: none; }
+    .wire-subtle { stroke: #64748b; stroke-width: 1.5; fill: none; }
+    .box-comb { fill: #eff6ff; stroke: #3b82f6; stroke-width: 1.8; rx: 8; filter: url(#shadow); }
+    .box-shift { fill: #f0fdf4; stroke: #22c55e; stroke-width: 1.8; rx: 8; filter: url(#shadow); }
+    .gate { fill: #ffffff; stroke: #1e40af; stroke-width: 1.8; }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e40af"/>
+    </marker>
+    <marker id="arrow-subtle" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 2 L 7 5 L 0 8 z" fill="#475569"/>
+    </marker>
+    <filter id="shadow" x="-3%" y="-6%" width="106%" height="116%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <!-- Background plate -->
+  <rect width="700" height="200" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.2"/>
+
+  <!-- Inputs a and shamt -->
+  <text x="25" y="55" class="wire-label">io.a (8bit)</text>
+  <line x1="105" y1="50" x2="180" y2="50" class="wire" marker-end="url(#arrow)"/>
+  <circle cx="140" cy="50" r="3.5" fill="#2563eb"/>
+  <line x1="140" y1="50" x2="140" y2="125" class="wire"/>
+  <line x1="140" y1="125" x2="180" y2="125" class="wire" marker-end="url(#arrow)"/>
+
+  <text x="25" y="80" class="wire-label">io.shamt (3bit)</text>
+  <line x1="125" y1="75" x2="180" y2="75" class="wire-subtle" marker-end="url(#arrow-subtle)"/>
+  <circle cx="158" cy="75" r="3" fill="#64748b"/>
+  <line x1="158" y1="75" x2="158" y2="150" class="wire-subtle"/>
+  <line x1="158" y1="150" x2="180" y2="150" class="wire-subtle" marker-end="url(#arrow-subtle)"/>
+
+  <!-- Left Shift Box -->
+  <rect x="180" y="30" width="210" height="58" class="box-comb"/>
+  <text x="285" y="54" class="title">論理左シフト (&lt;&lt;)</text>
+  <text x="285" y="73" class="subtitle">(io.a &lt;&lt; io.shamt)(7, 0)</text>
+
+  <!-- Right Shift Box -->
+  <rect x="180" y="108" width="210" height="58" class="box-shift"/>
+  <text x="285" y="132" class="title" style="fill:#166534;">論理右シフト (&gt;&gt;)</text>
+  <text x="285" y="151" class="subtitle">io.a &gt;&gt; io.shamt</text>
+
+  <!-- Wires to MUX -->
+  <line x1="390" y1="59" x2="450" y2="59" class="wire"/>
+  <line x1="450" y1="59" x2="450" y2="82" class="wire"/>
+  <line x1="450" y1="82" x2="480" y2="82" class="wire" marker-end="url(#arrow)"/>
+
+  <line x1="390" y1="137" x2="450" y2="137" class="wire"/>
+  <line x1="450" y1="137" x2="450" y2="114" class="wire"/>
+  <line x1="450" y1="114" x2="480" y2="114" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- MUX -->
+  <polygon points="480,65 530,80 530,116 480,131" class="gate"/>
+  <text x="505" y="102" class="title" style="font-size:11px;">MUX</text>
+  <text x="490" y="81" class="subtitle" style="font-size:10px;">0</text>
+  <text x="490" y="122" class="subtitle" style="font-size:10px;">1</text>
+
+  <!-- op control -->
+  <line x1="505" y1="175" x2="505" y2="124" class="wire-subtle" marker-end="url(#arrow-subtle)"/>
+  <text x="515" y="172" class="wire-label">io.op (0:左, 1:右)</text>
+
+  <!-- Output -->
+  <line x1="530" y1="98" x2="610" y2="98" class="wire" marker-end="url(#arrow)"/>
+  <text x="618" y="102" class="label">io.res (8bit)</text>
+</svg>

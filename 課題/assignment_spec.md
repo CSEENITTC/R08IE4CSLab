@@ -181,25 +181,28 @@
 
 ## 第6回: 構造化設計とALU (Structured Hierarchical Design & ALU)
 
-### 基本問題 (必須・目安45分): 算術・論理分離型 階層ALU
+### 基本問題1 (`assignment1` / 必須・目安30分): 算術ユニット (`ArithmeticUnit`)
 - **モジュール名**: `ArithmeticUnit`
-  - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `op` (Bool: 0=ADD, 1=SUB)
+  - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `op` (Bool: `false.B`=ADD, `true.B`=SUB)
   - **出力**: `res` (UInt(8.W)), `cout` (Bool)
-- **モジュール名**: `LogicUnit`
-  - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `op` (UInt(2.W): 0=AND, 1=OR, 2=XOR, 3=NOT a)
-  - **出力**: `res` (UInt(8.W))
-- **モジュール名**: `StructuredALU`
-  - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `aluSel` (UInt(3.W))  ※ bit[2]: 0=算術, 1=論理
-  - **出力**: `out` (UInt(8.W)), `carryOut` (Bool)
-  - **論理仕様**: `ArithmeticUnit` と `LogicUnit` をインスタンス化し、階層間ポートをバインド。最上位選択ビットで結果を選択。
-
-### 確認課題 (推奨・目安35分): ステータスフラグ生成 & パイプライン出力段
-- **モジュール名**: `PipelinedALUWithFlags`
-  - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `aluSel` (UInt(3.W)), `validIn` (Bool)
-  - **出力**: `out` (UInt(8.W)), `zero` (Bool), `negative` (Bool), `carry` (Bool), `validOut` (Bool)
   - **論理仕様**:
-    - `StructuredALU` の出力段に同期レジスタを挿入（パイプライン化）。
-    - フラグ生成: `zero` (`out === 0.U`), `negative` (`out(7) === 1.B`), `carry` (算術演算時の桁上げ)。
+    - 9ビット幅拡張演算子 (`+&`, `-&`) を用いて加算・減算を実行。
+    - 下位8ビット `ext(7, 0)` を `res` に、第8ビット `ext(8)` をキャリー／ボロー出力 `cout` に接続。
+
+### 基本問題2 (`assignment2` / 必須・目安25分): 論理ユニット (`LogicUnit`)
+- **モジュール名**: `LogicUnit`
+  - **入力**: `a` (UInt(8.W)), `b` (UInt(8.W)), `op` (UInt(2.W): `0`=AND, `1`=OR, `2`=XOR, `3`=NOT a)
+  - **出力**: `res` (UInt(8.W))
+  - **論理仕様**:
+    - 透過ラッチ防止のため `WireDefault(0.U(8.W))` で初期化し、`switch / is` で4種類のビット論理演算を切り替え。
+
+### 発展問題 (`assignment3` / 推奨・目安30分): シフトユニット (`ShiftUnit`)
+- **モジュール名**: `ShiftUnit`
+  - **入力**: `a` (UInt(8.W)), `shamt` (UInt(3.W): シフト量 0〜7ビット), `op` (Bool: `false.B`=論理左シフト `<<`, `true.B`=論理右シフト `>>`)
+  - **出力**: `res` (UInt(8.W))
+  - **論理仕様**:
+    - `op = false.B` のとき論理左シフト `(io.a << io.shamt)(7, 0)`（15ビット拡張結果から下位8ビットをスライス）。
+    - `op = true.B` のとき論理右シフト `io.a >> io.shamt`。
 
 ---
 

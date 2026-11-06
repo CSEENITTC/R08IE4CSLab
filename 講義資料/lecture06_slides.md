@@ -2,178 +2,350 @@
 marp: true
 theme: default
 paginate: true
-header: "第6回: 構造化設計とALU"
-footer: "© 2026 Hideaki YANAGISAWA, Dept. of Computer Science and Electronic Engineering, NIT, Tokuyama College"
-author: "Hideaki YANAGISAWA"
+header: "Computer System Laboratory — 第6回: 構造化設計とALU"
+footer: "© 2026 Chisel Digital Design Course | 講義60分 + 演習90分"
 style: |
   section {
-    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
-    font-size: 22px;
-    padding: 32px 40px;
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+    font-size: 25px;
+    line-height: 1.45;
   }
-  h1 { color: #1e3a8a; font-size: 34px; }
-  h2 { color: #1e40af; border-bottom: 2px solid #3b82f6; font-size: 26px; }
-  pre { font-size: 16px; margin: 8px 0; }
-  .box { background: #eff6ff; border-left: 5px solid #3b82f6; padding: 8px 14px; margin: 8px 0; }
-  .badge { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 16px; }
+  h1 { color: #1a365d; }
+  h2 { color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
+  code { background-color: #f7fafc; padding: 2px 6px; border-radius: 4px; }
+  pre { background-color: #1a202c !important; color: #f7fafc !important; padding: 14px !important; border-radius: 8px; }
+  table { font-size: 21px; width: 100%; border-collapse: collapse; }
+  th { background-color: #ebf8ff; color: #2c5282; padding: 8px; border: 1px solid #cbd5e0; }
+  td { padding: 8px; border: 1px solid #cbd5e0; }
+  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .box-good { background-color: #f0fff4; border-left: 6px solid #38a169; padding: 12px; }
+  .box-warn { background-color: #fffaf0; border-left: 6px solid #dd6b20; padding: 12px; }
+  .box-bad  { background-color: #fff5f5; border-left: 6px solid #e53e3e; padding: 12px; }
 ---
 
-# 第6回: 構造化設計とALU
-### 〜算術論理演算ユニットの機能分離・パイプライン化とステータスフラグ〜
+<!-- _class: lead -->
 
-<br>
+# Computer System Laboratory
+## 第6回: 構造化設計とALU
+### — 機能別ユニットの分割設計・階層統合・ステータスフラグ —
 
-- **資料作成者**: Hideaki YANAGISAWA
-- **講義時間**: 60分
-- **対象**: デジタル論理回路基礎習得者
-- **本日のアジェンダ**:
-  1. プロセッサの計算中枢: 算術論理演算ユニット (ALU)
-  2. 構造化設計の適用: 算術部と論理部の機能分離
-  3. サブモジュール1: 算術ユニット (`ArithmeticUnit`) の設計
-  4. サブモジュール2: 論理ユニット (`LogicUnit`) の設計
-  5. トップモジュール: 構造化ALU (`StructuredALU`) の完全実装
-  6. ALUの動作検証とマルチプレクサ制御
-  7. クリティカルパスと動作周波数: パイプライン化の必要性
-  8. `RegNext` によるパイプラインレジスタの挿入
-  9. プロセッサの条件分岐を支えるステータスフラグ (Zero, Negative, Carry)
-  10. 本日の演習課題（基本問題: 構造化ALU / 確認課題: パイプラインフラグALU）
+**授業構成**: 講義 60分 ／ 演習 90分
 
 <!-- Note:
-第6回の講義へようこそ。
-前回はモジュール階層化の基本と60進カウンタを通じて、同期回路の重要原則を学びました。
-今回はその構造化設計の本格的な応用として、あらゆるプロセッサのコア（計算中枢）である「算術論理演算ユニット（ALU: Arithmetic Logic Unit）」を設計します。
-加減算を行う算術ユニットとビット演算を行う論理ユニットを独立したサブモジュールとして切り分け、上位で綺麗に統合する手法を習得します。
-さらに後半では、動作周波数を向上させるパイプラインレジスタの挿入や、条件分岐に不可欠な各種ステータスフラグの生成回路にも挑戦します。
+みなさんこんにちは。「Computer System Laboratory」第6回の講義を始めます。
+前回（第5回）は、同一のモジュロNカウンタを複数インスタンス化して直列に繋ぐ「60進カウンタ」を学びました。
+本日の第6回は、プロセッサの中核である「算術論理演算装置（ALU: Arithmetic Logic Unit）」をテーマに、異なる機能を持つサブモジュール（算術演算・論理演算・シフト演算）を分割設計し、階層的に統合する構造化設計手法を学びます。
 -->
 
 ---
 
-## 1. 算術論理演算ユニット (ALU) の工学的役割
+## 1. 本日のタイムテーブルと学習目標
 
-### プロセッサの計算実行エンジン (Execution Unit)
-コンピュータが実行するあらゆる機械語命令（加減算、ビット演算、比較等）は、すべてALUの中で物理的な論理演算として実行されます。
+<div class="columns">
+<div>
 
-<p align="center"><img src="figures/lecture05_alu_arch.svg" width="620"></p>
+### タイムテーブル（計150分）
+| 時間 | パート | 内容 |
+| :--- | :--- | :--- |
+| **00:00 - 00:05** | 導入 | 第5回復習・フラット設計の限界 |
+| **00:05 - 00:50** | 本論 | 算術・論理・シフトユニットと構造化ALU、ステータスフラグ |
+| **00:50 - 01:00** | まとめ | 演習課題（3題）の仕様解説 |
+| **01:00 - 02:30** | **演習** | **基本問題(2題 50分) + 発展問題(1題 35分)** |
 
-- **入力データ**: 8ビットオペランド $A$ と $B$。
-- **演算選択 (`aluSel`)**: どの演算を実行するかを指定する制御コード。
-- **出力データ**: 演算結果 $Y$、および桁上げ等の状態フラグ。
+</div>
+<div>
+
+### 本日の到達目標
+1. 巨大化した単一モジュールを機能ごとのサブモジュールへ分割設計できる。
+2. **算術ユニット (`ArithmeticUnit`)**・**論理ユニット (`LogicUnit`)**・**シフトユニット (`ShiftUnit`)** を正確に実装できる。
+3. **構造化ALU (`StructuredALU`)** の階層接続と **ステータスフラグ（Zero, Negative, Carry）** の生成原理を理解する。
+
+</div>
+</div>
 
 <!-- Note:
-ALUの役割です。
-CPUのブロック図を見ると、必ず中心にV字型のALUシンボルが描かれています。
-プログラムが「足し算せよ」「AND演算せよ」と命令を出したとき、実際にその演算を担当するのがこの回路です。
-今日は8ビット幅の本格的なALUを設計します。
+本日のゴールは3つです。
+1つ目は、機能が異なる複数の演算器を独立したサブモジュールとして分割設計する方法。
+2つ目は、ALUを構成する3つの基本演算ユニットである「算術演算」「論理演算」「シフト演算」をChiselで正確に記述する方法。
+3つ目は、それらをトップモジュール（StructuredALU）で統合するアーキテクチャと、条件分岐の要となるステータスフラグ（Z, N, C）の生成回路の理解です。
 -->
 
 ---
 
-## 2. 構造化設計によるALUの機能分離
+## 2. 前回（第5回）の復習と本日の位置づけ
 
-### 1つのモジュールにすべて詰め込むとどうなるか？
-加算、減算、AND、OR、XOR、NOTを巨大な1つの `switch` 構文にベタ書きすると、回路が肥大化し、タイミング解析や個別機能の検証が極めて困難になります。
+### 第5回で学んだこと：反復的な階層化
+- 同じクラス（`ModuloNCounter`）に異なるパラメータ（10進・6進）を与えて複数インスタンス化し、`rollover` $\to$ `en` で直列（カスケード）に接続した。
 
-### 算術部と論理部の分離 (Separation of Concerns)
-演算の性質が根本的に異なる2つのユニットに階層分離します：
+### 第6回で学ぶこと：機能分割による並列階層化（Divide and Conquer）
+- プロセッサのデータパス（ALUなど）では、**役割の異なる複数の専用演算器**を並列に配置し、**マルチプレクサ（セレクタ）で出力を統合**する。
 
-```
-                ┌──────────────────┐
-     a, b ─────>│  ArithmeticUnit  │──> arithOut, cout
-                └──────────────────┘          │
-                                              ├─> [ MUX ] ──> ALU出力
-                ┌──────────────────┐          │    (aluSel[2])
-     a, b ─────>│    LogicUnit     │──> logicOut
-                └──────────────────┘
-```
+<div class="box-good">
 
-- **算術部**: キャリー伝播を伴う重い演算（加算・減算）。
-- **論理部**: ビット間の独立した軽量並列演算（AND・OR・XOR・NOT）。
+**構造化設計の核心**: 「算術演算」「論理演算」「シフト演算」「トップレベルの出力選択」をそれぞれ独立したモジュールに分けることで、**単体テスト・デバッグ・機能拡張**が劇的に容易になる。
+</div>
 
 <!-- Note:
-モジュール分割の戦略です。
-算術演算は「桁上げ（キャリー）」が下位ビットから上位ビットへ連鎖するため遅延が大きく、一方で論理演算は各ビットが独立しているため非常に高速です。
-このように回路の電気的・論理的性質が異なるものは別モジュールに分けるのが、ハードウェア設計の鉄則です。
+前回の60進カウンタは「同じカウンタを横に並べて桁上げを繋ぐ」という直列型の階層化でした。
+一方、今回設計するALUは「算術演算器」「論理演算器」「シフト演算器」という全く中身が違う専門ユニットを並列に並べ、最後にセレクタで結果を選ぶ「並列・機能分割型」の階層化です。
 -->
 
 ---
 
-## 3. サブモジュール1: 算術ユニット (`ArithmeticUnit`)
+## 3. なぜフラット設計（単一巨大モジュール）は破綻するのか？
 
-### 仕様設計
-加算（ADD: $A + B$）と減算（SUB: $A - B$）を実行し、8ビット結果とキャリーを出力。
+1つの `Module` 内に加算・減算・AND・OR・XOR・NOT・左右シフト・フラグ生成をすべて詰め込むと何が起きるか？
+
+<div class="columns">
+<div class="box-bad">
+
+### フラット設計の悪夢
+- 数十個の `when` / `switch` が絡み合い、信号の依存関係がスパゲッティ化する。
+- 「バグが算術部にあるのか、シフト部にあるのか、セレクタにあるのか」切り分けできない。
+- 複数人での分担開発が不可能。
+
+</div>
+<div class="box-good">
+
+### 構造化（階層化）設計の利点
+- **関心の分離**: 算術ユニットの設計者は加減算とキャリーだけに集中できる。
+- **単体検証**: 各ユニット（算術・論理・シフト）を個別のテストベンチで100%検証してから統合できる。
+- **再利用性**: 検証済みの演算ユニットを別のプロセッサ設計へそのまま流用できる。
+
+</div>
+</div>
+
+<!-- Note:
+もし1つの巨大なモジュールの中にすべての演算とフラグ回路を書いたらどうなるでしょうか。
+コードが数百行に膨れ上がり、どこかでビット幅やラッチのミスが起きたときに原因を特定するのが非常に困難になります。
+これに対し、機能ごとにモジュールを分割すれば、それぞれのユニットを単独でテスト（単体テスト）して完璧に動くことを確認してから組み立てることができます。本日の演習でも、この単体モジュール実装とテストを体験します。
+-->
+
+---
+
+## 4. モジュール階層化とインスタンス化の構文
+
+子モジュールを親モジュール内部で実体化するには **`Module(new 子クラス名)`** を用いる。
 
 ```scala
+class TopModule extends Module {
+  val io = IO(new Bundle { ... })
+
+  // 1. サブモジュールのインスタンス化 (必ず Module(...) でラップする)
+  val subA = Module(new SubModuleA())
+  val subB = Module(new SubModuleB())
+
+  // 2. 入力の供給: 親の入力を子の入力へ接続 (子.io.in := 親.io.in)
+  subA.io.in := io.inA
+  subB.io.in := subA.io.out // 子から子への内部接続
+
+  // 3. 出力の回収: 子の出力を親の出力へ接続 (親.io.out := 子.io.out)
+  io.out := subB.io.out
+}
+```
+
+> **`clock` と `reset` は自動配線**: Chiselでは親モジュールの `clock` / `reset` がすべてのサブモジュールへ自動的に分配される。
+
+<!-- Note:
+前回も登場した Module(new ...) の構文を改めて整理しましょう。
+ただの `new SubModuleA()` ではハードウェアとして実体化されません。必ず `Module(new SubModuleA())` で包みます。
+そして、親から子へ信号を渡すときは `subA.io.in := io.inA`、子から親へ結果を受け取るときは `io.out := subB.io.out` のように、`io` バンドルを介して `:=` で結線します。
+-->
+
+---
+
+## 5. 構造化ALU (`StructuredALU`) の全体アーキテクチャ
+
+トップモジュール `StructuredALU` は、独立した演算サブモジュールを束ね、上位制御信号 `aluSel` で出力を選択する。
+
+<p align="center">
+  <img src="figures/lecture05_structured_alu.svg" width="660">
+</p>
+
+- **機能分割**: 算術演算 (`ArithmeticUnit`) と 論理演算 (`LogicUnit`)（さらに拡張時はシフト演算 `ShiftUnit`）を並列に配置。
+- **制御信号の階層分配**: 下位ビットを各ユニット内の演算選択 (`op`) に渡し、上位ビットをトップレベルのマルチプレクサ選択信号に使う。
+
+<!-- Note:
+構造化ALUの全体ブロック図です。
+8ビット入力 a と b は、内部の各演算ユニットへ並列に分配されます。
+各ユニットは同時に計算を行い、最後にトップレベルのマルチプレクサ（ALU MUX）が制御信号 aluSel に従って、どのユニットの計算結果を採用するかを選択して出力します。
+-->
+
+---
+
+## 6. サブモジュール①：算術ユニット (`ArithmeticUnit`) — 課題1
+
+8ビットの加算 (`ADD`) と減算 (`SUB`) を行い、**8ビット結果 `res`** と **キャリー／ボロー出力 `cout`** を生成する。
+
+```scala
+// 課題1 (assignment1): 算術ユニット
 class ArithmeticUnit extends Module {
   val io = IO(new Bundle {
     val a    = Input(UInt(8.W))
     val b    = Input(UInt(8.W))
-    val op   = Input(Bool())     // 0: ADD, 1: SUB
+    val op   = Input(Bool()) // 0 (false.B): ADD, 1 (true.B): SUB
     val res  = Output(UInt(8.W))
     val cout = Output(Bool())
   })
 
-  // 9ビットの拡張加算/減算による正確なキャリー検出
-  val extRes = WireDefault(0.U(9.W))
+  // 9ビット幅拡張演算 (+& / -&) により桁上げ(cout)と8ビット結果(res)を同時に取得
+  val ext = WireDefault(0.U(9.W))
   when(!io.op) {
-    extRes := io.a +& io.b
+    ext := io.a +& io.b
   }.otherwise {
-    extRes := io.a -& io.b
+    ext := io.a -& io.b
   }
-
-  io.res  := extRes(7, 0)
-  io.cout := extRes(8)
+  io.res  := ext(7, 0) // 下位8ビット: 演算結果
+  io.cout := ext(8)    // 最上位ビット(第8ビット): キャリー／ボロー出力
 }
 ```
 
 <!-- Note:
-算術ユニットの実装コードです。
-ここで第1回で学んだ拡張加算演算子 +& および 拡張減算 -& が活きてきます。
-8ビット同士を足すと最大9ビットになるため、最上位ビット（8番ビット）を取り出すことで桁上げフラグ cout が1発で求まります。
-WireDefault で未定義値を防ぐ習慣も忘れていません。
+本日の演習の課題1（assignment1）となる算術ユニット `ArithmeticUnit` です。
+ここでの最大のポイントは、第1回で学んだビット幅拡張演算子 `+&` と `-&` の活用です。
+通常の `+` や `-` を使うと結果が8ビットに切り捨てられてしまい、8ビット目からあふれたキャリー（または減算時のボロー）が消えてしまいます。
+そこで 9ビットのワイヤ `ext = WireDefault(0.U(9.W))` を用意し、`+&` / `-&` で9ビット結果を受け取ってから、下位8ビット `ext(7, 0)` を `io.res` に、最上位ビット `ext(8)` を `io.cout` にスライスして出力します。
 -->
 
 ---
 
-## 4. サブモジュール2: 論理ユニット (`LogicUnit`)
+## 7. `+&` / `-&` におけるキャリーとボローの動作
 
-### 仕様設計
-4種類のビット単位論理演算（AND, OR, XOR, NOT）を実行。
+なぜ `ext := io.a +& io.b` と `ext := io.a -& io.b` で `ext(8)` がキャリー／ボローになるのか？
+
+| 演算モード (`op`) | 入力例 (`a`, `b`) | 9ビット拡張計算 (`ext`) | `res = ext(7, 0)` | `cout = ext(8)` | 意味 |
+| :--- | :--- | :--- | :---: | :---: | :--- |
+| **`false.B` (ADD)** | `10`, `20` | `0_0001_1110` (30) | `30` | `false.B` (`0`) | 桁上げなし |
+| **`false.B` (ADD)** | `200`, `100` | `1_0010_1100` (300) | `44` | `true.B` (`1`) | **桁上げ（Carry）発生** |
+| **`true.B` (SUB)** | `50`, `20` | `0_0001_1110` (30) | `30` | `false.B` (`0`) | 桁借りなし ($a \ge b$) |
+| **`true.B` (SUB)** | `10`, `20` | `1_1111_0110` (-10) | `246` | `true.B` (`1`) | **桁借り（Borrow）発生 ($a < b$)** |
+
+- **ポイント**: 無符号減算 $a - b$ において $a < b$ のとき、9ビット減算結果のMSB `ext(8)` は符号拡張により `1` となるため、そのまま**ボロー（桁借り）フラグ**として利用できる。
+
+<!-- Note:
+加算と減算の具体例を見てみましょう。
+200 + 100 = 300 は8ビット（最大255）を超えるため、下位8ビットの `res` は 300 - 256 = 44 となり、9ビット目の `ext(8)` が `1`（true.B）になります。
+また減算で 10 - 20 を計算すると、2の補数表現で 256 - 10 = 246 が下位8ビットに出力され、上位から借りてきたことを示す9ビット目の `ext(8)` が `1`（true.B）になります。この4パターンが課題1のテストベンチで検証されます。
+-->
+
+---
+
+## 8. サブモジュール②：論理ユニット (`LogicUnit`) — 課題2
+
+4種類のビット単位（Bitwise）論理演算を `op`（2ビット）で切り替える組合せ回路。
 
 ```scala
+// 課題2 (assignment2): 論理ユニット (AND, OR, XOR, NOT)
 class LogicUnit extends Module {
   val io = IO(new Bundle {
     val a   = Input(UInt(8.W))
     val b   = Input(UInt(8.W))
-    val op  = Input(UInt(2.W)) // 0:AND, 1:OR, 2:XOR, 3:NOT
+    val op  = Input(UInt(2.W)) // 0: AND, 1: OR, 2: XOR, 3: NOT a
     val res = Output(UInt(8.W))
   })
 
-  io.res := 0.U
+  // 透過ラッチ防止のため WireDefault で初期化し、switch/is で分岐
+  val outW = WireDefault(0.U(8.W))
   switch(io.op) {
-    is(0.U) { io.res := io.a & io.b }
-    is(1.U) { io.res := io.a | io.b }
-    is(2.U) { io.res := io.a ^ io.b }
-    is(3.U) { io.res := ~io.a }
+    is(0.U) { outW := io.a & io.b }
+    is(1.U) { outW := io.a | io.b }
+    is(2.U) { outW := io.a ^ io.b }
+    is(3.U) { outW := ~io.a }
   }
+  io.res := outW
 }
 ```
 
-- 各ビットが独立に計算されるため、キャリー伝播遅延が一切存在しない高速論理。
-
 <!-- Note:
-論理ユニットの実装です。
-第2回で学んだ switch 構文を使用しています。
-op が 0ならAND、1ならOR、2ならXOR、3ならNOTを出力します。
-桁上げ伝播がないため、非常に低遅延で合成されます。
+続いて課題2（assignment2）となる論理ユニット `LogicUnit` です。
+第2回で学んだ組合せ回路の鉄則通り、まず `val outW = WireDefault(0.U(8.W))` でデフォルト値を設定して透過ラッチを防止します。
+その上で `switch(io.op)` を使い、`0.U` ならビットAND (`&`)、`1.U` ならビットOR (`|`)、`2.U` ならビットXOR (`^`)、`3.U` なら入力 `a` のビット反転 (`~io.a`) を出力します。
 -->
 
 ---
 
-## 5. トップモジュール: 構造化ALU (`StructuredALU`)
+## 9. サブモジュール③：シフトユニット (`ShiftUnit`) — 課題3
 
-親モジュールの中で `ArithmeticUnit` と `LogicUnit` をインスタンス化し、配線。
+データを指定ビット数（`shamt`: Shift Amount）だけ左右へ移動させる**バレルシフタ（Barrel Shifter）**回路。
 
-<p align="center"><img src="figures/lecture05_alu_top.svg" width="660"></p>
+<p align="center">
+  <img src="figures/lecture06_shift_unit.svg" width="640">
+</p>
+
+- **なぜ `shamt` は3ビット (`UInt(3.W)`) なのか？**
+  - 8ビットデータ (`UInt(8.W)`) に対する有効なシフト量は **0〜7ビットの8通り**（$2^3 = 8$）であるため、`shamt` は3ビット幅で指定する。
+- **シフト演算の用途**: $2^k$ 倍の高速乗除算（`a << k` $= a \times 2^k$、`a >> k` $= \lfloor a / 2^k \rfloor$）、ビットフィールド抽出。
+
+<!-- Note:
+そして課題3（assignment3）で新たに実装するのが、シフトユニット `ShiftUnit` です。
+カウンタの回では1クロックごとに1ビットずつずらす「シフトレジスタ（順序回路）」を学びましたが、ALU内部のシフタは、0〜7ビットの任意のシフト量を1サイクル（組合せ回路）で一気にずらす「バレルシフタ」です。
+入力データが8ビットなので、シフト量 `shamt`（Shift Amount）は0〜7を表す3ビット（`UInt(3.W)`）となります。
+-->
+
+---
+
+## 10. Chiselにおける動的シフト演算の注意点と実装 (`ShiftUnit.scala`)
+
+Chiselの動的左シフト `io.a << io.shamt` は、**ビット落ちを防ぐため結果のビット幅が最大幅へ自動拡張**される仕様を持つ。
+
+<div class="box-warn">
+
+**動的左シフトのビット幅拡張**:
+`io.a` (`8.W`) `<<` `io.shamt` (`3.W`: 最大7シフト) の結果幅は **$8 + (2^3 - 1) = 15$ ビット (`15.W`)** に拡張される！
+8ビットALUの出力として得るには、**`(...)(7, 0)` で下位8ビットを明示的にスライス**する。
+</div>
+
+```scala
+// 課題3 (assignment3): シフトユニット (論理左シフト・論理右シフト)
+class ShiftUnit extends Module {
+  val io = IO(new Bundle {
+    val a     = Input(UInt(8.W))
+    val shamt = Input(UInt(3.W)) // シフト量 (0〜7ビット)
+    val op    = Input(Bool())    // 0 (false.B): 論理左シフト (<<), 1 (true.B): 論理右シフト (>>)
+    val res   = Output(UInt(8.W))
+  })
+  val outW = WireDefault(0.U(8.W))
+  when(!io.op) {
+    outW := (io.a << io.shamt)(7, 0) // 15ビット拡張結果から下位8ビットを取得
+  }.otherwise {
+    outW := io.a >> io.shamt       // 論理右シフト (上位には0が補充される)
+  }
+  io.res := outW
+}
+```
+
+<!-- Note:
+Chiselでシフトユニットを実装する際、非常に重要な仕様があります。
+Chiselでは `io.a << io.shamt` のように変数（UInt）で左シフトを行うと、最大の7ビット左シフトが起きても上位ビットが消えないよう、自動的に 8 + 7 = 15ビット幅のワイヤを生成します。
+今回のシフトユニットは8ビット演算器ですので、あふれた上位ビットを切り捨てて下位8ビットだけを取り出すために `(io.a << io.shamt)(7, 0)` とスライスします。
+一方、論理右シフト `io.a >> io.shamt` は上位に0が詰められ、8ビット幅以下に収まるためそのまま代入できます。
+-->
+
+---
+
+## 11. シフト演算の動作例（テストベンチ検証ケース）
+
+`ShiftUnit` の動作を2進数・16進数で確認しよう。
+
+| 演算モード (`op`) | 入力 `a` | `shamt` | シフト前の2進数 (`a`) | シフト後の下位8ビット (`res`) | 16進結果 |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **`false.B` (左 `<<`)** | `0x05` | `2.U` | `0000_0101` | `0001_0100` (下位に `00` 挿入) | **`0x14`** |
+| **`false.B` (左 `<<`)** | `0xB4` | `3.U` | `1011_0100` | `1010_0000` (上位3bit切り捨て) | **`0xA0`** |
+| **`true.B` (右 `>>`)** | `0xB4` | `2.U` | `1011_0100` | `0010_1101` (上位に `00` 挿入) | **`0x2D`** |
+| **`true.B` (右 `>>`)** | `0xA5` | `0.U` | `1010_0101` | `1010_0101` (変化なし) | **`0xA5`** |
+
+<!-- Note:
+課題3のテストベンチ（ShiftUnittb.scala）でチェックする4つのケースです。
+特に2つ目のケース `0xB4 << 3` に注目してください。
+2進数 `1011_0100` を左に3ビットずらすと、上位の `101` が8ビット枠から外れて切り捨てられ、残った `1_0100` の右側に `000` が入って `1010_0000`（`0xA0`）になります。
+また3つ目の `0xB4 >> 2` では、論理右シフトなので右側の `00` が押し出され、左側から `00` が補充されて `0010_1101`（`0x2D`）になります。
+-->
+
+---
+
+## 12. トップモジュール：構造化ALU (`StructuredALU`) の統合実装
+
+分割設計したサブモジュールを `Module(new ...)` でインスタンス化し、上位モジュールで統合する。
 
 ```scala
 class StructuredALU extends Module {
@@ -184,278 +356,90 @@ class StructuredALU extends Module {
     val out      = Output(UInt(8.W))
     val carryOut = Output(Bool())
   })
+  // 1. 各サブモジュールのインスタンス化
+  val arithUnit = Module(new ArithmeticUnit)
+  val logicUnit = Module(new LogicUnit)
 
-  val arith = Module(new ArithmeticUnit)
-  val logic = Module(new LogicUnit)
-  // ... 配線とセレクタ ...
+  // 2. 入力信号と下位制御ビットの配線
+  arithUnit.io.a := io.a; arithUnit.io.b := io.b; arithUnit.io.op := io.aluSel(0)
+  logicUnit.io.a := io.a; logicUnit.io.b := io.b; logicUnit.io.op := io.aluSel(1, 0)
+
+  // 3. 最上位ビット aluSel(2) による出力選択 (MUX)
+  io.out      := Mux(io.aluSel(2) === 0.U, arithUnit.io.res,  logicUnit.io.res)
+  io.carryOut := Mux(io.aluSel(2) === 0.U, arithUnit.io.cout, false.B)
 }
 ```
 
 <!-- Note:
-トップモジュール StructuredALU の外観です。
-内部に2つの子モジュールを配置し、外部ポート a と b を両方に分岐して供給します。
-そして最後に、aluSel の最上位ビットを使って、どちらの計算結果を最終出力 out に流すかを切り替えます。
+各演算ユニットが完成したら、トップモジュール `StructuredALU` の実装は驚くほどシンプルになります。
+`Module(new ArithmeticUnit)` と `Module(new LogicUnit)` でインスタンスを作り、入力 `a`, `b` と選択信号の下位ビットを繋ぎます。
+そして出力は `io.aluSel(2)`（最上位ビット）を見て、`0` なら算術ユニットの結果、`1` なら論理ユニットの結果を `Mux` で選ぶだけです。
+論理演算が選ばれているときはキャリーは意味を持たないため、`io.carryOut` には `false.B` を出力します。
+もしここにシフトユニット `ShiftUnit` も加える場合は、`aluSel` の上位ビットで3入力の `MuxLookup` や `switch` に拡張するだけで簡単に組み込めます。
 -->
 
 ---
 
-## 6. ポート配線とマルチプレクサ制御の実装
+## 13. ステータスフラグの生成回路（Zero, Negative, Carry）
 
-```scala
-  // 入力信号の分配
-  arith.io.a := io.a
-  arith.io.b := io.b
-  arith.io.op := io.aluSel(0)
+CPUが条件分岐命令（`BEQ`, `BLT`, `BGEU` など）を実行するために、ALUは演算結果の性質を表す**ステータスフラグ**を出力する。
 
-  logic.io.a := io.a
-  logic.io.b := io.b
-  logic.io.op := io.aluSel(1, 0)
+<p align="center">
+  <img src="figures/lecture05_status_flags.svg" width="600">
+</p>
 
-  // 最上位ビット aluSel(2) による出力マルチプレクサ
-  when(io.aluSel(2) === 0.U) {
-    io.out      := arith.io.res
-    io.carryOut := arith.io.cout
-  }.otherwise {
-    io.out      := logic.io.res
-    io.carryOut := false.B // 論理演算時はキャリー無効
-  }
-```
-
-- **`aluSel` デコード表**:
-  - `000`: ADD / `001`: SUB
-  - `100`: AND / `101`: OR / `110`: XOR / `111`: NOT
+| フラグ名 | 記号 | 論理条件（8ビット出力 `out` の場合） | Chisel記述 |
+| :--- | :---: | :--- | :--- |
+| **Zero (ゼロ)** | **Z** | 全ビットが `0` のとき `true.B` | `io.zero := (out === 0.U)` |
+| **Negative (負)** | **N** | 最上位ビット(MSB)が `1` のとき `true.B` | `io.negative := out(7)` |
+| **Carry (桁上げ)** | **C** | 算術演算で第8ビットへの桁上げ／ボロー発生 | `io.carry := rawCout` |
 
 <!-- Note:
-ポート配線の詳細です。
-arith.io.op には下位1ビットを、logic.io.op には下位2ビットを渡しています。
-そして aluSel(2) が 0 のときは算術結果を、1 のときは論理結果を出力します。
-論理演算時にはキャリーは発生しないため、carryOut には false.B を安全に出力しています。
+プロセッサのALUには、計算結果のデータだけでなく「ステータスフラグ」という1ビットの出力群が備わっています。
+例えばプログラムの `if (a == b)` を判定するとき、CPUはALUで `a - b` を計算し、結果が0になったことを示す **Zeroフラグ (Z)** が `1` かどうかでジャンプ先を決めます。
+Chiselでは、8ビット結果 `out` に対して `out === 0.U` でZeroフラグ、最上位ビット `out(7)` の抽出で2の補数表現におけるNegative（負数）フラグ、そして算術ユニットの `cout`（論理演算時は `false.B` にマスク）でCarryフラグを、それぞれ1行の組合せ回路として生成できます。
 -->
 
 ---
 
-## 7. クリティカルパスと動作周波数
+## 14. 階層化ALU設計のベストプラクティスまとめ
 
-### クリティカルパス (Critical Path) とは？
-クロックエッジから次のクロックエッジまでの間に、信号が通過する**最も遅延時間の長い組合せ論理パス**。
+<div class="box-good">
 
-<p align="center"><img src="figures/lecture05_critical_path.svg" width="640"></p>
+### 構造化データパス設計 4つの鉄則
+1. **1モジュール・1責務**: 算術 (`ArithmeticUnit`)、論理 (`LogicUnit`)、シフト (`ShiftUnit`)、統合 (`StructuredALU`) を明確に分離する。
+2. **ビット幅境界の明示**:
+   - 加減算の桁上げ抽出には **`+&` / `-&` と9ビットワイヤ**を用いる。
+   - 動的左シフト `<<` では拡張されたビット幅から **`(7, 0)` で下位8ビットをスライス**する。
+3. **透過ラッチの完全防止**: `switch` や `when` で分岐する組合せ回路の内部ワイヤには必ず **`WireDefault(0.U(...))`** を適用する。
+4. **不要フラグのマスク**: 算術演算以外（論理演算・シフト演算）が選択されている時は、`carryOut` を `false.B` にマスクして誤動作を防ぐ。
 
-$$f_{max} = \frac{1}{T_{clk}} \le \frac{1}{t_{cq} + t_{comb} + t_{setup}}$$
-
-- 組合せ論理遅延 $t_{comb}$ が長大になると、最高動作周波数 $f_{max}$ が頭打ちになる。
-- 解決策: 回路の途中にレジスタを挟んでパスを半分に分割する $\implies$ **パイプライン化！**
+</div>
 
 <!-- Note:
-性能向上のための最重要概念、クリティカルパスです。
-プロセッサの動作クロック（GHz）を上げるためには、1クロックの間に信号が通り抜けられるゲートの数を減らさなければなりません。
-ALUのように演算が重い回路では、入力から出力までそのまま組合せ回路で繋ぐと遅延が累積してしまいます。
-そこで登場するのがパイプラインレジスタです。
+本日の設計原則のまとめです。
+特に2番の「ビット幅境界の明示」はChiselならではの重要ポイントです。
+算術ユニットでは `+&` / `-&` で9ビットに広げてから `ext(7, 0)` と `ext(8)` に分けること、シフトユニットでは `(io.a << io.shamt)(7, 0)` で8ビット幅に切り出すこと、この2つをしっかり押さえておきましょう。
 -->
 
 ---
 
-## 8. `RegNext` によるパイプラインレジスタの挿入
+## 15. 本日の演習課題 (90分) — `Lab06`
 
-Chiselでは、信号を1クロック遅延させるレジスタを **`RegNext(...)`** で極めて簡潔に記述できる。
+本日の演習では、ALUを構成する3つの基本演算ユニットをそれぞれ独立したモジュールとして実装し、単体テスト (`sbt test`) で検証します。
 
-```scala
-// 1サイクルのパイプラインレジスタを挿入
-val outReg   = RegNext(aluOut)
-val carryReg = RegNext(aluCarry)
+| 課題フォルダ | モジュール名 | 入出力仕様 | 実装のポイント |
+| :--- | :--- | :--- | :--- |
+| **`assignment1`**<br>（必須・30分） | **`ArithmeticUnit`**<br>（算術ユニット） | 入力: `a(8.W)`, `b(8.W)`, `op(Bool)`<br>出力: `res(8.W)`, `cout(Bool)` | `op=0`: 加算 (`+&`), `op=1`: 減算 (`-&`)<br>9ビット結果から `ext(7,0)` と `ext(8)` を分離 |
+| **`assignment2`**<br>（必須・25分） | **`LogicUnit`**<br>（論理ユニット） | 入力: `a(8.W)`, `b(8.W)`, `op(2.W)`<br>出力: `res(8.W)` | `WireDefault` + `switch(io.op)`<br>`0`: AND, `1`: OR, `2`: XOR, `3`: NOT `a` |
+| **`assignment3`**<br>（発展・30分） | **`ShiftUnit`**<br>（シフトユニット） | 入力: `a(8.W)`, `shamt(3.W)`, `op(Bool)`<br>出力: `res(8.W)` | `op=0`: 論理左シフト `(io.a << io.shamt)(7, 0)`<br>`op=1`: 論理右シフト `io.a >> io.shamt` |
 
-io.out      := outReg
-io.carryOut := carryReg
-```
-
-- **効果**: ALU内部の演算遅延と、ALU後段のバス配線遅延がレジスタで物理的に分断される。
-- **トレードオフ**: 結果が出るまでに 1 クロックのレイテンシ（遅延）が生じるが、**スループット（動作周波数）を劇的に向上**させることができる。
+- **検証手順**: 各フォルダ（`assignment1`〜`assignment3`）で `sbt test` を実行し、`All tests passed.` を確認してください。
 
 <!-- Note:
-RegNext によるパイプライン化の実装です。
-RegNext(aluOut) と書くだけで、D-FFのバンクが自動生成され、信号が1クロック分保持されます。
-演算結果を1クロック遅れて受け取ることになりますが、その代わりにクロック周波数を2倍近くまで引き上げることが可能になります。
-現代の高速CPUは、このように無数のパイプラインステージで構成されています。
--->
-
----
-
-## 9. プロセッサ条件分岐を支えるステータスフラグ
-
-プログラムの `if (a == b)` や `if (a < b)` は、ALUが生成する**ステータスフラグ**によって判定される。
-
-<p align="center"><img src="figures/lecture05_flags.svg" width="660"></p>
-
-| フラグ名 | 記号 | 判定条件 | 主な用途 |
-| :---: | :---: | :--- | :--- |
-| **Zero** | `Z` | 演算結果の全ビットが 0 (`out === 0.U`) | 一致判定 (`BEQ`, `BNE`) |
-| **Negative** | `N` | 符号ビット (MSB) が 1 (`out(7) === 1.B`) | 負数判定 (`BLT`, `BGE`) |
-| **Carry** | `C` | 算術演算で桁上げ/借りが発生 | 多倍長演算、符号なし比較 |
-
-<!-- Note:
-ステータスフラグの重要性です。
-ソフトウェアの条件分岐 if 文は、ハードウェア的には「減算を行ってその結果のフラグを見る」ことで実現されています。
-結果が0ならZeroフラグが立ち、引き算した結果がマイナスならNegativeフラグが立ちます。
-CPUのプログラムカウンタは、このフラグを見てジャンプするかどうかを決定します。
--->
-
----
-
-## 10. フラグ生成回路のハードウェア記述
-
-```scala
-// Zeroフラグ: 8ビット全ビットが0であることを検出（NORツリー）
-val zeroFlag = (aluOut === 0.U)
-
-// Negativeフラグ: 最上位ビット（符号ビット）を抽出
-val negativeFlag = aluOut(7)
-
-// Carryフラグ: 算術演算時のみ有効
-val carryFlag = aluCarry
-```
-
-- **回路規模の考察**:
-  - `zeroFlag` は8入力NORゲート（またはANDリダクション）に相当し、極めて軽量。
-  - `negativeFlag` は単なる配線の引き出し（ゲート数 0）。
-
-<!-- Note:
-フラグ生成の実装コードです。
-Chiselでは直感的に書けます。
-zeroFlag は aluOut === 0.U で判定します。ハードウェア的には8ビットの各ビットをORして反転するNOR回路になります。
-negativeFlag は最上位ビット aluOut(7) を取り出すだけです。
-キャリーフラグは算術ユニットのキャリー出力をそのまま利用します。
--->
-
----
-
-## 11. 制御信号 (`validIn` / `validOut`) の同期整合性
-
-データパスにパイプラインレジスタを入れた場合、**制御信号も全く同じサイクル数だけ遅延**させなければならない。
-
-```
-Cycle:       0          1          2
-validIn:   ──‾‾‾‾‾‾‾‾\______________________
-Data:      [  A, B  ]
-outReg:    ─────────[ Result ]
-validOut:  ─────────[  ‾‾‾‾‾‾‾‾\  ]  <── validIn を RegNext したもの！
-```
-
-```scala
-// 制御信号の同期遅延
-io.validOut := RegNext(io.validIn, init = false.B)
-```
-
-- これを怠ると、データが無効なサイクルで後段の回路が誤ってデータを取り込んでしまう！
-
-<!-- Note:
-パイプライン設計で最も重要な「制御の同期」です。
-データだけを1クロック遅らせて、データの有効性を示す valid 信号をそのままにしておくと、後段の回路が「まだ計算が終わっていない無効な値」を正しいデータだと勘違いして処理してしまいます。
-データが1クロック遅れるなら、valid 信号も必ず RegNext で1クロック遅らせる。
-これがパイプライン制御の鉄則です。
--->
-
----
-
-## 12. パイプライン化ALU (`PipelinedALUWithFlags`) の完全構造
-
-```scala
-class PipelinedALUWithFlags extends Module {
-  val io = IO(new Bundle {
-    val a = Input(UInt(8.W)), val b = Input(UInt(8.W)), val aluSel = Input(UInt(3.W))
-    val validIn = Input(Bool())
-    val out = Output(UInt(8.W)), val zero = Output(Bool())
-    val negative = Output(Bool()), val carry = Output(Bool())
-    val validOut = Output(Bool())
-  })
-
-  val alu = Module(new StructuredALU)
-  alu.io.a := io.a; alu.io.b := io.b; alu.io.aluSel := io.aluSel
-
-  // パイプラインレジスタとフラグの同期ラッチ
-  io.out      := RegNext(alu.io.out)
-  io.carry    := RegNext(alu.io.carryOut)
-  io.zero     := RegNext(alu.io.out === 0.U)
-  io.negative := RegNext(alu.io.out(7))
-  io.validOut := RegNext(io.validIn, false.B)
-}
-```
-
-<!-- Note:
-確認課題である PipelinedALUWithFlags の完全実装例です。
-StructuredALU をインスタンス化し、その出力をすべて RegNext で受けています。
-フラグも出力データと完全に同じタイミングで1クロック遅れて同期出力されます。
-リセット時には validOut が確実に false.B になるよう初期値を指定しています。
--->
-
----
-
-## 13. モジュール分割の設計原則まとめ
-
-良いハードウェア構造化のための3大原則：
-
-1. **高凝集・低結合 (High Cohesion, Low Coupling)**:
-   - 関連の強い論理（加算・減算）を同一モジュールに閉じ込め、外部との信号線数を最小化する。
-2. **入出力方向の明確化**:
-   - `Bundle` 内で `Input` と `Output` を厳格に宣言し、未接続ピンを残さない。
-3. **同期境界の明確化 (Register Slice)**:
-   - モジュール境界や長大な演算器の出力段にレジスタを挟むことで、タイミング解析（STA）が容易になり、システム全体の最高動作周波数を向上できる。
-
-<!-- Note:
-構造化設計のまとめです。
-ソフトウェアのクラス設計と同様、ハードウェアでも高凝集・低結合が設計品質を左右します。
-また、モジュールの出口にレジスタを置く設計作法を「レジスタスライス」と呼び、FPGAやASICで周波数を上げるための標準的なテクニックです。
--->
-
----
-
-## 14. 階層設計のデバッグ手法
-
-階層化されたモジュールでバグが発生した場合の切り分け手順：
-
-```
- [ トップモジュール不具合発生 ]
-                │
-                ├─> 1. 各サブモジュールの単体テスト (Unit Test) はパスしているか？
-                │      └─> NO: サブモジュール内部の論理バグ（加減算やビット反転の誤り）
-                │
-                └─> 2. YES: 階層間のポート配線ミスを疑う
-                       ├─> 信号線の左右取り違え (`arith.io.a := io.b` などの誤配線)
-                       └─> 制御信号のビットスライスのズレ (`aluSel(2, 1)` と `(1, 0)`)
-```
-
-- 「部品が正しいか」と「配線が正しいか」を完全に分離して検証する。
-
-<!-- Note:
-デバッグの鉄則です。
-構造化設計の最大の強みは「部品単体でテストできること」です。
-システムが動かないときは、まず ArithmeticUnit 単体、LogicUnit 単体でテストベンチを走らせます。
-両方が100%動いているなら、疑うべきはトップモジュールでのピンの配線ミス（左右のつなぎ間違いなど）に絞り込めます。
--->
-
----
-
-## 15. 本日の演習課題 (90分)
-
-演習は**基本問題**と**確認課題**の2段階構成です。
-
-### 基本問題（必須 / 目安45〜50分）
-- **`StructuredALU`**:
-  - `ArithmeticUnit`（加減算・キャリー出力）の設計
-  - `LogicUnit`（4種ビット論理演算）の設計
-  - 上位モジュールでのインスタンス化と `aluSel` による結果選択
-
-### 確認課題（推奨 / 目安30〜35分）
-- **`PipelinedALUWithFlags`**:
-  - `StructuredALU` のインスタンス化と出力段レジスタ (`RegNext`) 挿入
-  - Zero, Negative, Carry フラグ生成および `validOut` 同期化
-
-### バッファ (5〜10分)
-- コード整形、テスト実行、波形確認
-
-<!-- Note:
-演習課題の確認です。
-まずは基本問題で、算術ユニットと論理ユニットを別々に書き、StructuredALUで綺麗に結線してください。
-完了した方は確認課題に進み、パイプラインレジスタとフラグ生成回路を追加して、プロセッサ品質のALUを完成させましょう。
+本日の演習課題は3つに分かれています。
+assignment1 は算術ユニット `ArithmeticUnit`、assignment2 は論理ユニット `LogicUnit`、assignment3 はシフトユニット `ShiftUnit` です。
+それぞれのフォルダにテストベンチ（ArithmeticUnittb.scala, LogicUnittb.scala, ShiftUnittb.scala）が用意されていますので、各フォルダで `sbt test` を実行して全テストケースにパスすることを確認してください。
 -->
 
 ---
@@ -463,19 +447,18 @@ StructuredALU をインスタンス化し、その出力をすべて RegNext で
 ## 16. 第6回 まとめ & 次回予告
 
 ### 本日の重要ポイント
-1. 階層化設計により、演算器を機能単位（算術部・論理部）に分割統治できる。
-2. サブモジュールは `Module(new SubModule)` で実体化し、ピン同士を配線する。
-3. `RegNext` によりパイプラインレジスタを挿入し、クリティカルパスを分断できる。
-4. 演算結果からゼロ・負・キャリーの**ステータスフラグ**を生成し、制御信号と同期させる。
+1. 大規模な組合せ回路（ALU）は、**算術・論理・シフト**の各機能サブモジュールに分割して設計・単体検証する。
+2. 算術演算では **`+&` / `-&`** で9ビット拡張し、下位8ビット (`res`) とキャリー (`cout`) を抽出する。
+3. 論理演算では **`WireDefault` と `switch/is`** で透過ラッチを防ぎつつ4演算を切り替える。
+4. 動的左シフトではビット幅拡張に対応するため **`(io.a << io.shamt)(7, 0)`** で下位8ビットをスライスする。
+5. 演算結果から **Zero (`out === 0.U`)・Negative (`out(7)`)・Carry** のステータスフラグを生成できる。
 
-### 次回予告: 第7回「有限状態機械 (FSM)」
-- 順序回路の最高峰: システムの自律制御を司るステートマシン
-- **Moore型 vs Mealy型**: グリッチ耐性とタイミング設計の違い
-- Chiselにおける列挙型 `ChiselEnum` を用いた型安全な状態遷移設計
+### 次回予告: 第7回「有限状態機械（FSM）の設計」
+- `ChiselEnum` を用いた型安全な状態定義と Moore型FSM による制御回路設計
 
 <!-- Note:
 第6回の講義は以上です。
-モジュールを分割し、組み上げる構造化設計の醍醐味と、パイプライン化の威力を実感できたでしょうか。
-次回はいよいよ、ハードウェア制御の最高峰である「有限状態機械（FSM）」を学びます。
-それでは演習に移ります。starter_kitのExercises.scalaのLab06を開いてください。
+データパスの花形であるALUの内部構造と3つの演算ユニットの作り方が理解できたと思います。
+次回第7回は、こうしたデータパスを順番に制御する頭脳となる「有限状態機械（FSM）」を学びます。
+それでは演習を開始してください！
 -->

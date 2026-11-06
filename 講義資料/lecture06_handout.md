@@ -1,122 +1,139 @@
----
-marp: true
-theme: default
-paginate: true
-header: "第6回 構造化設計とALU"
-footer: "© 2026 Hideaki YANAGISAWA, Dept. of Computer Science and Electronic Engineering, NIT, Tokuyama College"
-author: "Hideaki YANAGISAWA"
-size: 210mm x 297mm
-style: |
-  section {
-    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    padding: 30px 40px;
-    justify-content: flex-start;
-  }
-  h1 { color: #1e3a8a; font-size: 24px; margin-bottom: 8px; border-bottom: 2px solid #1e3a8a; padding-bottom: 4px; }
-  h2 { color: #1e40af; font-size: 18px; border-bottom: 1.5px solid #3b82f6; margin-top: 16px; margin-bottom: 8px; padding-bottom: 2px; }
-  h3 { color: #2563eb; font-size: 15px; margin-top: 10px; margin-bottom: 4px; }
-  pre { font-size: 12.5px; margin: 6px 0; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
-  .box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 6px 12px; margin: 8px 0; font-size: 13.5px; }
-  table { font-size: 13px; border-collapse: collapse; margin: 8px 0; width: 100%; }
-  th, td { border: 1px solid #cbd5e1; padding: 4px 8px; }
-  th { background: #f1f5f9; color: #1e293b; }
----
-
-# 第6回: 構造化設計とALU 受講者配布資料
-**授業名**: Computer System Laboratory | **資料作成者**: Hideaki YANAGISAWA | **講義**: 60分 / **演習**: 90分
+# 第6回 講義配布資料（ハンドアウト）
+## テーマ：構造化設計とALU（算術・論理・シフトユニットと階層統合）
 
 ---
 
-## 1. 構造化・階層化設計の工学的原則
+### 1. 構造化（階層化）設計とALUの全体構成
+複雑な単一モジュール（フラット設計）はバグの温床となる。プロセッサの演算器（ALU）を設計する際は、機能ごとに独立したサブモジュールへ分割（Divide and Conquer）し、単体テストで検証した上で上位モジュールにて統合する。
 
-1. **関心の分離 (Separation of Concerns)**:
-   - 単一の巨大なモジュール（モノリシック回路）は、デバッグ困難、タイミング収束難、再利用性欠如を招く。
-   - 回路を機能単位（算術演算、論理演算、制御など）の独立したサブモジュールへ分割し、疎結合に設計する。
+<p align="center">
+  <img src="figures/lecture05_structured_alu.svg" width="620">
+</p>
 
-2. **モジュールのインスタンス化とポートバインド**:
-   - Chiselでは `val subMod = Module(new SubModule)` でハードウェアインスタンスを生成。
-   - 親モジュール内で、サブモジュールの入力ポートに入力信号を接続 (`subMod.io.in := ...`) し、出力ポートから結果を受け取る (`io.out := subMod.io.out`)。
-
-3. **パイプライン化の概念 (Pipelining)**:
-   - 長大な組合せ回路パスの途中に同期レジスタ（パイプラインレジスタ）を挿入することで、最悪伝搬遅延 $t_{pd}$ を短縮し、回路の動作周波数（スループット）を劇的に向上させる。
+- **インスタンス化構文**: `val sub = Module(new SubModule())`
+- **ポート配線**: `sub.io.in := io.in`（入力供給）、`io.out := sub.io.out`（出力回収）
 
 ---
 
-## 2. 階層型 ALU のアーキテクチャ
+### 2. ALUを構成する3つの基本演算サブモジュール（本日の演習課題）
 
-```
-            +-------------------+
-            |   StructuredALU   |
-            |                   |
-io.a ----+----> [ArithmeticUnit]----+---> (res, cout) ---+
-io.b --+-|                                               |
-       | +----> [ LogicUnit    ]----+---> (res) ---------+--> Mux(aluSel[2]) -> io.out
-       |                                                 |
-io.aluSel -----------------------------------------------+
-```
+#### ① 算術ユニット (`ArithmeticUnit` — `assignment1`)
+8ビットの加算 (`ADD`) と減算 (`SUB`) を実行し、8ビット結果 `res` とキャリー／ボロー `cout` を出力する。
+通常の `+` や `-` では最上位からの桁上げが切り捨てられるため、**ビット幅拡張演算子 `+&` / `-&`** を用いて9ビットワイヤ `ext` に受け、下位8ビット `ext(7, 0)` と第8ビット `ext(8)` に分離する。
 
-### 演算選択コード (`aluSel[2:0]`)
-- **最上位 bit[2] = 0**: 算術演算ユニット (`ArithmeticUnit`)
-  - `000`: ADD ($a + b$)
-  - `001`: SUB ($a - b$)
-- **最上位 bit[2] = 1**: 論理演算ユニット (`LogicUnit`)
-  - `100`: AND ($a \ \& \ b$)
-  - `101`: OR ($a \ | \ b$)
-  - `110`: XOR ($a \ \oplus \ b$)
-  - `111`: NOT ($\sim a$)
-
----
-
-## 3. ステータスフラグ生成とパイプライン出力段
-
-プロセッサのALUでは、演算結果と同時に条件分岐の判定根拠となるフラグを生成します。
-
-| フラグ | 論理定義 | 説明 |
-|:---:|:---|:---|
-| **Zero (Z)** | `out === 0.U` | 演算結果がゼロ |
-| **Negative (N)** | `out(7) === 1.B` | 最上位ビットが1（2の補数での負数） |
-| **Carry (C)** | `arithUnit.io.cout` | 算術加算時の桁あふれ・減算時のボロー |
-
-### パイプラインレジスタの挿入
-入力の有効フラグ `validIn` と同期して、1クロック遅延させた出力を生成：
 ```scala
-val outReg   = RegEnable(aluCore.io.out, io.validIn)
-val validReg = RegNext(io.validIn, false.B)
-io.out      := outReg
-io.validOut := validReg
+class ArithmeticUnit extends Module {
+  val io = IO(new Bundle {
+    val a    = Input(UInt(8.W))
+    val b    = Input(UInt(8.W))
+    val op   = Input(Bool()) // 0 (false.B): ADD, 1 (true.B): SUB
+    val res  = Output(UInt(8.W))
+    val cout = Output(Bool())
+  })
+
+  val ext = WireDefault(0.U(9.W))
+  when(!io.op) {
+    ext := io.a +& io.b
+  }.otherwise {
+    ext := io.a -& io.b
+  }
+
+  io.res  := ext(7, 0)
+  io.cout := ext(8)
+}
+```
+
+#### ② 論理ユニット (`LogicUnit` — `assignment2`)
+ビット単位（Bitwise）の `AND`, `OR`, `XOR`, `NOT` を2ビット選択信号 `op` で切り替える。透過ラッチを防ぐため、`WireDefault(0.U(8.W))` で初期化したワイヤに対して `switch / is` で割り当てる。
+
+```scala
+class LogicUnit extends Module {
+  val io = IO(new Bundle {
+    val a   = Input(UInt(8.W))
+    val b   = Input(UInt(8.W))
+    val op  = Input(UInt(2.W)) // 0: AND, 1: OR, 2: XOR, 3: NOT a
+    val res = Output(UInt(8.W))
+  })
+
+  val outW = WireDefault(0.U(8.W))
+  switch(io.op) {
+    is(0.U) { outW := io.a & io.b }
+    is(1.U) { outW := io.a | io.b }
+    is(2.U) { outW := io.a ^ io.b }
+    is(3.U) { outW := ~io.a }
+  }
+  io.res := outW
+}
+```
+
+#### ③ シフトユニット (`ShiftUnit` — `assignment3`)
+8ビット入力 `a` を、3ビットのシフト量 `shamt`（0〜7ビット）だけ論理左シフト (`<<`) または論理右シフト (`>>`) するバレルシフタ回路。
+
+<p align="center">
+  <img src="figures/lecture06_shift_unit.svg" width="600">
+</p>
+
+- **動的左シフトのビット幅に注意**: Chiselの `io.a << io.shamt` は最大シフト時にも上位ビットが失われないよう、結果幅が $8 + (2^3 - 1) = 15$ ビットへ自動拡張される。8ビット出力 `res` に合わせるため、**`(io.a << io.shamt)(7, 0)`** で下位8ビットをスライスする。
+
+```scala
+class ShiftUnit extends Module {
+  val io = IO(new Bundle {
+    val a     = Input(UInt(8.W))
+    val shamt = Input(UInt(3.W)) // シフト量 (0〜7ビット)
+    val op    = Input(Bool())    // 0 (false.B): 論理左シフト (<<), 1 (true.B): 論理右シフト (>>)
+    val res   = Output(UInt(8.W))
+  })
+
+  val outW = WireDefault(0.U(8.W))
+  when(!io.op) {
+    outW := (io.a << io.shamt)(7, 0)
+  }.otherwise {
+    outW := io.a >> io.shamt
+  }
+  io.res := outW
+}
 ```
 
 ---
 
-## 4. 本日の演習課題仕様 (Assignment Specifications)
+### 3. トップモジュール (`StructuredALU`) の階層統合とステータスフラグ
 
-### 基本問題: 階層化 ALU (`StructuredALU`)
-1. **`ArithmeticUnit`**: 加算・減算（キャリーアウト出力付き）を行うサブモジュール。
-2. **`LogicUnit`**: AND, OR, XOR, NOT を行うサブモジュール。
-3. **`StructuredALU`**: 上記2つのサブモジュールをインスタンス化し、`aluSel(2)` で演算結果をMUX選択して出力するトップモジュール。
+各サブモジュールを `Module(new ...)` で実体化し、上位ビットで出力をマルチプレクスする。
 
-### 確認課題: パイプライン化 & ステータスフラグ付き ALU (`PipelinedALUWithFlags`)
-- `StructuredALU` の出力段に同期レジスタを挿入。
-- `zero`, `negative`, `carry` フラグを生成。
-- 入力有効信号 `validIn` を1クロック遅延させた `validOut` とデータ同期。
+```scala
+class StructuredALU extends Module {
+  val io = IO(new Bundle {
+    val a        = Input(UInt(8.W))
+    val b        = Input(UInt(8.W))
+    val aluSel   = Input(UInt(3.W)) // bit[2]: 0=算術, 1=論理
+    val out      = Output(UInt(8.W))
+    val carryOut = Output(Bool())
+  })
+  val arithUnit = Module(new ArithmeticUnit)
+  val logicUnit = Module(new LogicUnit)
+
+  arithUnit.io.a := io.a; arithUnit.io.b := io.b; arithUnit.io.op := io.aluSel(0)
+  logicUnit.io.a := io.a; logicUnit.io.b := io.b; logicUnit.io.op := io.aluSel(1, 0)
+
+  io.out      := Mux(io.aluSel(2) === 0.U, arithUnit.io.res,  logicUnit.io.res)
+  io.carryOut := Mux(io.aluSel(2) === 0.U, arithUnit.io.cout, false.B)
+}
+```
+
+#### ステータスフラグ（Zero, Negative, Carry）の生成
+プロセッサの条件分岐命令で使用されるステータスフラグは、ALUの出力結果 `out`（8ビット）および `carryOut` から組合せ回路として直接生成できる。
+
+<p align="center">
+  <img src="figures/lecture05_status_flags.svg" width="560">
+</p>
+
+- **Zeroフラグ (`Z`)**: `val zero = (io.out === 0.U)` （全ビットが0のとき `true.B`）
+- **Negativeフラグ (`N`)**: `val negative = io.out(7)` （最上位ビットMSBが1のとき `true.B`）
+- **Carryフラグ (`C`)**: `val carry = io.carryOut` （算術演算時の桁上げ／ボロー）
 
 ---
 
-## 5. 本日の演習課題ガイドライン (90分)
-
-演習コードは `Lab06/` 配下の各課題ディレクトリに分かれて配置されています。
-
-### 基本問題 (必須・目安45分 / 配点70点)
-- サブモジュール分離（算術20点、論理20点）と階層結合（親モジュール30点）。
-
-### 確認課題 (推奨・目安35分 / 配点30点)
-- パイプラインレジスタ挿入とデータ・valid同期 (15点)。
-- Z/N/C ステータスフラグの正確な生成 (15点)。
-
-### 採点ポイント
-- モジュール階層化 (`Module(new SubModule)`) が適切に行われているか (25点)
-- ポートの結線 (`:=`) に型・ビット幅の不一致がないか (25点)
-- 算術・論理全演算の真理値一致 (25点)
-- パイプライン化に伴う1クロック遅延とフラグ整合性 (25点)
+### 4. 演習課題チェックリスト（90分）
+- [ ] **課題1 (`assignment1` / 必須・目安30分)**: `ArithmeticUnit.scala` を実装し、`sbt test` で加算・減算・キャリー／ボローの全テストにパスしたか？
+- [ ] **課題2 (`assignment2` / 必須・目安25分)**: `LogicUnit.scala` を実装し、`sbt test` で AND, OR, XOR, NOT の全テストにパスしたか？
+- [ ] **課題3 (`assignment3` / 発展・目安30分)**: `ShiftUnit.scala` を実装し、`sbt test` で論理左シフト (`<<`)・論理右シフト (`>>`) の全テストにパスしたか？

@@ -282,22 +282,22 @@ class DigitalClockCore extends Module {
 // 第6回: 構造化設計とALU (Structured Hierarchical Design & ALU)
 // ============================================================================
 
-// 基本問題 サブモジュール1: 算術ユニット
+// 基本問題1 (assignment1): 算術ユニット
 class ArithmeticUnit extends Module {
   val io = IO(new Bundle {
     val a    = Input(UInt(8.W))
     val b    = Input(UInt(8.W))
-    val op   = Input(Bool()) // 0: ADD, 1: SUB
+    val op   = Input(Bool()) // 0 (false.B): ADD, 1 (true.B): SUB
     val res  = Output(UInt(8.W))
     val cout = Output(Bool())
   })
 
-  // TODO: 加算・減算を実装してください
+  // TODO: 9ビット幅拡張演算 (+& / -&) を用いて加算・減算とキャリー出力を実装してください
   io.res  := 0.U
   io.cout := false.B
 }
 
-// 基本問題 サブモジュール2: 論理ユニット
+// 基本問題2 (assignment2): 論理ユニット
 class LogicUnit extends Module {
   val io = IO(new Bundle {
     val a   = Input(UInt(8.W))
@@ -306,45 +306,21 @@ class LogicUnit extends Module {
     val res = Output(UInt(8.W))
   })
 
-  // TODO: 4種類のビット論理演算を実装してください
+  // TODO: WireDefault と switch/is を用いて4種類のビット論理演算を実装してください
   io.res := 0.U
 }
 
-// 基本問題 トップモジュール: 構造化ALU
-class StructuredALU extends Module {
+// 発展問題 (assignment3): シフトユニット
+class ShiftUnit extends Module {
   val io = IO(new Bundle {
-    val a        = Input(UInt(8.W))
-    val b        = Input(UInt(8.W))
-    val aluSel   = Input(UInt(3.W)) // bit[2]: 0=算術, 1=論理
-    val out      = Output(UInt(8.W))
-    val carryOut = Output(Bool())
+    val a     = Input(UInt(8.W))
+    val shamt = Input(UInt(3.W)) // シフト量 (0〜7ビット)
+    val op    = Input(Bool())    // 0 (false.B): 論理左シフト (<<), 1 (true.B): 論理右シフト (>>)
+    val res   = Output(UInt(8.W))
   })
 
-  // TODO: ArithmeticUnit と LogicUnit をインスタンス化し、階層接続してください
-  io.out      := 0.U
-  io.carryOut := false.B
-}
-
-// 発展問題: フラグ生成 & パイプライン化ALU
-class PipelinedALUWithFlags extends Module {
-  val io = IO(new Bundle {
-    val a        = Input(UInt(8.W))
-    val b        = Input(UInt(8.W))
-    val aluSel   = Input(UInt(3.W))
-    val validIn  = Input(Bool())
-    val out      = Output(UInt(8.W))
-    val zero     = Output(Bool())
-    val negative = Output(Bool())
-    val carry    = Output(Bool())
-    val validOut = Output(Bool())
-  })
-
-  // TODO: StructuredALU にパイプラインレジスタと各種ステータスフラグを追加してください
-  io.out      := 0.U
-  io.zero     := false.B
-  io.negative := false.B
-  io.carry    := false.B
-  io.validOut := false.B
+  // TODO: WireDefault と when/otherwise を用いて論理左シフト・論理右シフトを実装してください
+  io.res := 0.U
 }
 
 // ============================================================================
