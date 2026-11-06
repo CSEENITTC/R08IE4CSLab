@@ -83,8 +83,6 @@ val word2 = high ## low       // ##演算子: 同様に結合（import不要）
 
 ---
 
-<!-- _class: lead -->
-
 ## 4. 半加算器・全加算器・多ビット加算の仕様
 
 ### 1ビット半加算器 (Half Adder: HA)

@@ -9,18 +9,18 @@ size: 210mm x 297mm
 style: |
   section {
     font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
-    font-size: 13.8px;
-    line-height: 1.48;
-    padding: 24px 34px;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 30px 40px;
     justify-content: flex-start;
   }
-  h1 { color: #1e3a8a; font-size: 22px; margin-bottom: 6px; border-bottom: 2px solid #1e3a8a; padding-bottom: 4px; }
-  h2 { color: #1e40af; font-size: 16.5px; border-bottom: 1.5px solid #3b82f6; margin-top: 10px; margin-bottom: 5px; padding-bottom: 2px; }
-  h3 { color: #2563eb; font-size: 14px; margin-top: 6px; margin-bottom: 3px; }
-  pre { font-size: 11.2px; margin: 4px 0; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
-  .box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 5px 10px; margin: 5px 0; font-size: 12.5px; }
-  table { font-size: 12px; border-collapse: collapse; margin: 5px 0; width: 100%; }
-  th, td { border: 1px solid #cbd5e1; padding: 3px 6px; }
+  h1 { color: #1e3a8a; font-size: 24px; margin-bottom: 8px; border-bottom: 2px solid #1e3a8a; padding-bottom: 4px; }
+  h2 { color: #1e40af; font-size: 18px; border-bottom: 1.5px solid #3b82f6; margin-top: 16px; margin-bottom: 8px; padding-bottom: 2px; }
+  h3 { color: #2563eb; font-size: 15px; margin-top: 10px; margin-bottom: 4px; }
+  pre { font-size: 12.5px; margin: 6px 0; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
+  .box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 6px 12px; margin: 8px 0; font-size: 13.5px; }
+  table { font-size: 13px; border-collapse: collapse; margin: 8px 0; width: 100%; }
+  th, td { border: 1px solid #cbd5e1; padding: 4px 8px; }
   th { background: #f1f5f9; color: #1e293b; }
 ---
 
@@ -29,7 +29,7 @@ style: |
 
 ---
 
-## 1. 階層化設計 (Hierarchical Design) と単一クロック同期イネーブル伝播
+## 1. 階層化設計 (Hierarchical Design) の工学的原則と単一クロック同期イネーブル伝播
 
 機能ごとに独立した**サブモジュール（部品）**へ分割し、**トップモジュール（親）**内で `val u = Module(new SubModule(...))` として実体化・ポート結線（`:=`）する手法を**階層化設計**と呼びます。
 - **【最重要・厳禁】非同期リップルクロックの追放**: 分周器や下位カウンタの出力を次段のクロック端子に繋ぐことは厳禁です。
@@ -94,3 +94,27 @@ class DigitalClockCoretb extends AnyFlatSpec with ChiselScalatestTester {
 - **`dut.clock.setTimeout(0)`**: デフォルトの1000サイクル制限によるタイムアウトを解除します。
 - **`WriteVcdAnnotation` の削除**: 約99万サイクル（$999 \times 999$）の実行でメモリ不足にならないよう、長時間の波形保存（大量のメモリを消費）を行わずに実行します。
 - **`Simulated time` 表示**: 実際の出力内容に合わせて `Simulated time: 時:分:秒` をコンソールに表示し、24時間時計の巡回動作を確認します。
+
+---
+
+## 4. 本日の演習課題仕様 (Assignment Specifications)
+
+- **基本問題 (`assignment1`)**: `Counter60(clkFreq = 9000000)` — `OneHzGenerator`, `ModuloNCounter(10, 4)`, `ModuloNCounter(6, 3)` の3モジュール階層化と実機FPGA動作確認。
+- **確認課題 (`assignment2`)**: `DigitalClockCore` — 秒(60進)・分(60進)・時(24進) の3段同期カスケード接続と長時間シミュレーション動作確認。
+
+---
+
+## 5. 本日の演習課題ガイドライン (90分)
+
+演習コードは `Lab05/` 配下の各課題ディレクトリ（`assignment1`, `assignment2`）に配置されています。
+
+### 基本問題 (必須・目安45分 / 配点70点)
+- `Counter60` の3サブモジュール階層接続と単体テスト (`sbt test`)、およびFPGAボードでの実機確認 (70点)。
+
+### 発展問題 (推奨・目安35分 / 配点30点)
+- `DigitalClockCore` の3段同期カスケード接続と長時間シミュレーション (`Simulated time`) による動作確認 (30点)。
+
+### 採点ポイント
+- 非同期リップルクロックを使わず、すべてのモジュールを単一システムクロックで駆動しているか (30点)
+- `oneHzPulse` および `rollover` が次段の `en` に正しく同期配線されているか (40点)
+- `DigitalClockCore` が 23:59:59 の次サイクルで 00:00:00 へ正しくラップアラウンドするか (30点)

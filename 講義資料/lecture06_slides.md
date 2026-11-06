@@ -2,34 +2,40 @@
 marp: true
 theme: default
 paginate: true
-header: "Computer System Laboratory — 第6回: 構造化設計とALU"
-footer: "© 2026 Chisel Digital Design Course | 講義60分 + 演習90分"
+header: "第6回: 構造化設計とALU"
+footer: "© 2026 Hideaki YANAGISAWA, Dept. of Computer Science and Electronic Engineering, NIT, Tokuyama College"
+author: "Hideaki YANAGISAWA"
 style: |
   section {
-    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
-    font-size: 25px;
-    line-height: 1.45;
+    font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
+    font-size: 22px;
+    padding: 32px 40px;
   }
-  h1 { color: #1a365d; }
-  h2 { color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 6px; }
-  code { background-color: #f7fafc; padding: 2px 6px; border-radius: 4px; }
-  pre { background-color: #1a202c !important; color: #f7fafc !important; padding: 14px !important; border-radius: 8px; }
-  table { font-size: 21px; width: 100%; border-collapse: collapse; }
-  th { background-color: #ebf8ff; color: #2c5282; padding: 8px; border: 1px solid #cbd5e0; }
-  td { padding: 8px; border: 1px solid #cbd5e0; }
-  .columns { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  .box-good { background-color: #f0fff4; border-left: 6px solid #38a169; padding: 12px; }
-  .box-warn { background-color: #fffaf0; border-left: 6px solid #dd6b20; padding: 12px; }
-  .box-bad  { background-color: #fff5f5; border-left: 6px solid #e53e3e; padding: 12px; }
+  h1 { color: #1e3a8a; font-size: 34px; }
+  h2 { color: #1e40af; border-bottom: 2px solid #3b82f6; font-size: 26px; }
+  pre { font-size: 16px; margin: 8px 0; }
+  .box { background: #eff6ff; border-left: 5px solid #3b82f6; padding: 8px 14px; margin: 8px 0; }
+  .badge { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 16px; }
 ---
 
-<!-- _class: lead -->
+# 第6回: 構造化設計とALU
+### 〜機能別ユニットの分割設計・階層統合とステータスフラグ〜
 
-# Computer System Laboratory
-## 第6回: 構造化設計とALU
-### — 機能別ユニットの分割設計・階層統合・ステータスフラグ —
+<br>
 
-**授業構成**: 講義 60分 ／ 演習 90分
+- **資料作成者**: Hideaki YANAGISAWA
+- **講義時間**: 60分
+- **対象**: デジタル論理回路基礎習得者
+- **本日のアジェンダ**:
+  1. 前回の復習（反復的階層化から機能分割による並列階層化へ）
+  2. フラット設計の限界と分割統治（Divide and Conquer）
+  3. モジュール階層化とインスタンス化構文 (`Module(new ...)`)
+  4. 構造化ALU (`StructuredALU`) の全体アーキテクチャ
+  5. 算術ユニット (`ArithmeticUnit`: 加減算と `+&` / `-&` によるキャリー抽出)
+  6. 論理ユニット (`LogicUnit`: `WireDefault` と `switch/is` による4種論理演算)
+  7. シフトユニット (`ShiftUnit`: 動的左シフト `<<`・論理右シフト `>>` とビット幅仕様)
+  8. トップモジュール `StructuredALU` の統合とステータスフラグ（Zero, Negative, Carry）
+  9. 本日の演習課題（課題1: 算術ユニット / 課題2: 論理ユニット / 課題3: シフトユニット）
 
 <!-- Note:
 みなさんこんにちは。「Computer System Laboratory」第6回の講義を始めます。
@@ -39,50 +45,16 @@ style: |
 
 ---
 
-## 1. 本日のタイムテーブルと学習目標
+## 1. 前回（第5回）の復習と本日の位置づけ
 
-<div class="columns">
-<div>
-
-### タイムテーブル（計150分）
-| 時間 | パート | 内容 |
-| :--- | :--- | :--- |
-| **00:00 - 00:05** | 導入 | 第5回復習・フラット設計の限界 |
-| **00:05 - 00:50** | 本論 | 算術・論理・シフトユニットと構造化ALU、ステータスフラグ |
-| **00:50 - 01:00** | まとめ | 演習課題（3題）の仕様解説 |
-| **01:00 - 02:30** | **演習** | **基本問題(2題 50分) + 発展問題(1題 35分)** |
-
-</div>
-<div>
-
-### 本日の到達目標
-1. 巨大化した単一モジュールを機能ごとのサブモジュールへ分割設計できる。
-2. **算術ユニット (`ArithmeticUnit`)**・**論理ユニット (`LogicUnit`)**・**シフトユニット (`ShiftUnit`)** を正確に実装できる。
-3. **構造化ALU (`StructuredALU`)** の階層接続と **ステータスフラグ（Zero, Negative, Carry）** の生成原理を理解する。
-
-</div>
-</div>
-
-<!-- Note:
-本日のゴールは3つです。
-1つ目は、機能が異なる複数の演算器を独立したサブモジュールとして分割設計する方法。
-2つ目は、ALUを構成する3つの基本演算ユニットである「算術演算」「論理演算」「シフト演算」をChiselで正確に記述する方法。
-3つ目は、それらをトップモジュール（StructuredALU）で統合するアーキテクチャと、条件分岐の要となるステータスフラグ（Z, N, C）の生成回路の理解です。
--->
-
----
-
-## 2. 前回（第5回）の復習と本日の位置づけ
-
-### 第5回で学んだこと：反復的な階層化
+### 第5回で学んだこと：反復的な直列階層化
 - 同じクラス（`ModuloNCounter`）に異なるパラメータ（10進・6進）を与えて複数インスタンス化し、`rollover` $\to$ `en` で直列（カスケード）に接続した。
 
 ### 第6回で学ぶこと：機能分割による並列階層化（Divide and Conquer）
 - プロセッサのデータパス（ALUなど）では、**役割の異なる複数の専用演算器**を並列に配置し、**マルチプレクサ（セレクタ）で出力を統合**する。
 
-<div class="box-good">
-
-**構造化設計の核心**: 「算術演算」「論理演算」「シフト演算」「トップレベルの出力選択」をそれぞれ独立したモジュールに分けることで、**単体テスト・デバッグ・機能拡張**が劇的に容易になる。
+<div class="box">
+<b>構造化設計の核心</b>: 「算術演算」「論理演算」「シフト演算」「トップレベルの出力選択」をそれぞれ独立したモジュールに分けることで、<b>単体テスト・デバッグ・機能拡張</b>が劇的に容易になる。
 </div>
 
 <!-- Note:
@@ -92,28 +64,14 @@ style: |
 
 ---
 
-## 3. なぜフラット設計（単一巨大モジュール）は破綻するのか？
+## 2. なぜフラット設計（単一巨大モジュール）は破綻するのか？
 
 1つの `Module` 内に加算・減算・AND・OR・XOR・NOT・左右シフト・フラグ生成をすべて詰め込むと何が起きるか？
 
-<div class="columns">
-<div class="box-bad">
-
-### フラット設計の悪夢
-- 数十個の `when` / `switch` が絡み合い、信号の依存関係がスパゲッティ化する。
-- 「バグが算術部にあるのか、シフト部にあるのか、セレクタにあるのか」切り分けできない。
-- 複数人での分担開発が不可能。
-
-</div>
-<div class="box-good">
-
-### 構造化（階層化）設計の利点
-- **関心の分離**: 算術ユニットの設計者は加減算とキャリーだけに集中できる。
-- **単体検証**: 各ユニット（算術・論理・シフト）を個別のテストベンチで100%検証してから統合できる。
-- **再利用性**: 検証済みの演算ユニットを別のプロセッサ設計へそのまま流用できる。
-
-</div>
-</div>
+| 設計手法 | 構造の特徴 | 開発・検証上の影響 |
+| :--- | :--- | :--- |
+| **フラット設計**<br>（単一巨大モジュール） | 数十個の `when` / `switch` が1つのファイル内で複雑に絡み合う | ・バグが算術部・シフト部・セレクタのどこにあるか切り分け困難<br>・複数人での分担開発や部分再利用が不可能 |
+| **構造化（階層化）設計**<br>（機能別モジュール分割） | 算術・論理・シフト・統合を独立した `Module` として分離 | ・**関心の分離**: 各ユニットの論理だけに集中できる<br>・**単体検証**: 各ユニットを個別のテストベンチで100%検証可能<br>・**再利用性**: 検証済みユニットを別の設計へそのまま流用可能 |
 
 <!-- Note:
 もし1つの巨大なモジュールの中にすべての演算とフラグ回路を書いたらどうなるでしょうか。
@@ -123,7 +81,7 @@ style: |
 
 ---
 
-## 4. モジュール階層化とインスタンス化の構文
+## 3. モジュール階層化とインスタンス化の構文
 
 子モジュールを親モジュール内部で実体化するには **`Module(new 子クラス名)`** を用いる。
 
@@ -144,7 +102,7 @@ class TopModule extends Module {
 }
 ```
 
-> **`clock` と `reset` は自動配線**: Chiselでは親モジュールの `clock` / `reset` がすべてのサブモジュールへ自動的に分配される。
+- **`clock` と `reset` は自動配線**: Chiselでは親モジュールの `clock` / `reset` がすべてのサブモジュールへ自動的に分配される。
 
 <!-- Note:
 前回も登場した Module(new ...) の構文を改めて整理しましょう。
@@ -154,7 +112,7 @@ class TopModule extends Module {
 
 ---
 
-## 5. 構造化ALU (`StructuredALU`) の全体アーキテクチャ
+## 4. 構造化ALU (`StructuredALU`) の全体アーキテクチャ
 
 トップモジュール `StructuredALU` は、独立した演算サブモジュールを束ね、上位制御信号 `aluSel` で出力を選択する。
 
@@ -173,7 +131,7 @@ class TopModule extends Module {
 
 ---
 
-## 6. サブモジュール①：算術ユニット (`ArithmeticUnit`) — 課題1
+## 5. サブモジュール①：算術ユニット (`ArithmeticUnit`) — 課題1
 
 8ビットの加算 (`ADD`) と減算 (`SUB`) を行い、**8ビット結果 `res`** と **キャリー／ボロー出力 `cout`** を生成する。
 
@@ -209,7 +167,7 @@ class ArithmeticUnit extends Module {
 
 ---
 
-## 7. `+&` / `-&` におけるキャリーとボローの動作
+## 6. `+&` / `-&` におけるキャリーとボローの動作
 
 なぜ `ext := io.a +& io.b` と `ext := io.a -& io.b` で `ext(8)` がキャリー／ボローになるのか？
 
@@ -230,7 +188,7 @@ class ArithmeticUnit extends Module {
 
 ---
 
-## 8. サブモジュール②：論理ユニット (`LogicUnit`) — 課題2
+## 7. サブモジュール②：論理ユニット (`LogicUnit`) — 課題2
 
 4種類のビット単位（Bitwise）論理演算を `op`（2ビット）で切り替える組合せ回路。
 
@@ -264,6 +222,24 @@ class LogicUnit extends Module {
 
 ---
 
+## 8. 論理ユニット (`LogicUnit`) の真理値とビットマスク応用
+
+各ビット $i \in \{0, \dots, 7\}$ が独立・並列に演算される（キャリー伝播がないため極めて高速）。
+
+| `op` | 演算子 | 入力 `a = 0xF0` (`1111_0000`) / `b = 0x3C` (`0011_1100`) | 結果 `res` | 主なプロセッサ応用 |
+| :---: | :---: | :--- | :---: | :--- |
+| **`0.U`** | `a & b` | `1111_0000 & 0011_1100` $\to$ `0011_0000` | **`0x30`** | 特定ビットの抽出・ゼロクリア（マスク処理） |
+| **`1.U`** | `a \| b` | `1111_0000 \| 0011_1100` $\to$ `1111_1100` | **`0xFC`** | 特定ビットの強制セット（フラグ立て） |
+| **`2.U`** | `a ^ b` | `1111_0000 ^ 0011_1100` $\to$ `1100_1100` | **`0xCC`** | 特定ビットの反転（トグル）・一致比較 |
+| **`3.U`** | `~a` | `~1111_0000` $\to$ `0000_1111` | **`0x0F`** | 全ビット反転（1の補数生成） |
+
+<!-- Note:
+論理ユニットで行われる4つのビット演算の具体例と用途です。
+算術演算と違い、隣のビットへの桁上げ（キャリー伝播）が一切存在しないため、ゲート1段分の遅延だけで瞬時に結果が確定します。
+-->
+
+---
+
 ## 9. サブモジュール③：シフトユニット (`ShiftUnit`) — 課題3
 
 データを指定ビット数（`shamt`: Shift Amount）だけ左右へ移動させる**バレルシフタ（Barrel Shifter）**回路。
@@ -274,11 +250,11 @@ class LogicUnit extends Module {
 
 - **なぜ `shamt` は3ビット (`UInt(3.W)`) なのか？**
   - 8ビットデータ (`UInt(8.W)`) に対する有効なシフト量は **0〜7ビットの8通り**（$2^3 = 8$）であるため、`shamt` は3ビット幅で指定する。
-- **シフト演算の用途**: $2^k$ 倍の高速乗除算（`a << k` $= a \times 2^k$、`a >> k` $= \lfloor a / 2^k \rfloor$）、ビットフィールド抽出。
+- **シフト演算の用途**: $2^k$ 倍の高速乗除算（`a << k` $= a \times 2^k$、`a >> k` $= \lfloor a / 2^k \rfloor$）、ビットフィールド位置合わせ。
 
 <!-- Note:
-そして課題3（assignment3）で新たに実装するのが、シフトユニット `ShiftUnit` です。
-カウンタの回では1クロックごとに1ビットずつずらす「シフトレジスタ（順序回路）」を学びましたが、ALU内部のシフタは、0〜7ビットの任意のシフト量を1サイクル（組合せ回路）で一気にずらす「バレルシフタ」です。
+そして課題3（assignment3）で実装するのが、シフトユニット `ShiftUnit` です。
+第4回のカウンタでは1クロックごとに1ビットずつずらす「シフトレジスタ（順序回路）」を学びましたが、ALU内部のシフタは、0〜7ビットの任意のシフト量を1サイクル（組合せ回路）で一気にずらす「バレルシフタ」です。
 入力データが8ビットなので、シフト量 `shamt`（Shift Amount）は0〜7を表す3ビット（`UInt(3.W)`）となります。
 -->
 
@@ -288,11 +264,10 @@ class LogicUnit extends Module {
 
 Chiselの動的左シフト `io.a << io.shamt` は、**ビット落ちを防ぐため結果のビット幅が最大幅へ自動拡張**される仕様を持つ。
 
-<div class="box-warn">
-
-**動的左シフトのビット幅拡張**:
-`io.a` (`8.W`) `<<` `io.shamt` (`3.W`: 最大7シフト) の結果幅は **$8 + (2^3 - 1) = 15$ ビット (`15.W`)** に拡張される！
-8ビットALUの出力として得るには、**`(...)(7, 0)` で下位8ビットを明示的にスライス**する。
+<div class="box">
+<b>動的左シフトのビット幅拡張</b>:<br>
+<code>io.a</code> (<code>8.W</code>) <code>&lt;&lt;</code> <code>io.shamt</code> (<code>3.W</code>: 最大7シフト) の結果幅は <b>8 + (2<sup>3</sup> - 1) = 15ビット (<code>15.W</code>)</b> に拡張される！<br>
+8ビットALUの出力として得るには、<b><code>(...)(7, 0)</code> で下位8ビットを明示的にスライス</b>する。
 </div>
 
 ```scala
@@ -375,7 +350,6 @@ class StructuredALU extends Module {
 `Module(new ArithmeticUnit)` と `Module(new LogicUnit)` でインスタンスを作り、入力 `a`, `b` と選択信号の下位ビットを繋ぎます。
 そして出力は `io.aluSel(2)`（最上位ビット）を見て、`0` なら算術ユニットの結果、`1` なら論理ユニットの結果を `Mux` で選ぶだけです。
 論理演算が選ばれているときはキャリーは意味を持たないため、`io.carryOut` には `false.B` を出力します。
-もしここにシフトユニット `ShiftUnit` も加える場合は、`aluSel` の上位ビットで3入力の `MuxLookup` や `switch` に拡張するだけで簡単に組み込めます。
 -->
 
 ---
@@ -404,16 +378,12 @@ Chiselでは、8ビット結果 `out` に対して `out === 0.U` でZeroフラ�
 
 ## 14. 階層化ALU設計のベストプラクティスまとめ
 
-<div class="box-good">
-
-### 構造化データパス設計 4つの鉄則
-1. **1モジュール・1責務**: 算術 (`ArithmeticUnit`)、論理 (`LogicUnit`)、シフト (`ShiftUnit`)、統合 (`StructuredALU`) を明確に分離する。
-2. **ビット幅境界の明示**:
-   - 加減算の桁上げ抽出には **`+&` / `-&` と9ビットワイヤ**を用いる。
-   - 動的左シフト `<<` では拡張されたビット幅から **`(7, 0)` で下位8ビットをスライス**する。
-3. **透過ラッチの完全防止**: `switch` や `when` で分岐する組合せ回路の内部ワイヤには必ず **`WireDefault(0.U(...))`** を適用する。
-4. **不要フラグのマスク**: 算術演算以外（論理演算・シフト演算）が選択されている時は、`carryOut` を `false.B` にマスクして誤動作を防ぐ。
-
+<div class="box">
+<b>構造化データパス設計 4つの鉄則</b><br>
+1. <b>1モジュール・1責務</b>: 算術 (<code>ArithmeticUnit</code>)、論理 (<code>LogicUnit</code>)、シフト (<code>ShiftUnit</code>)、統合 (<code>StructuredALU</code>) を明確に分離する。<br>
+2. <b>ビット幅境界の明示</b>: 加減算の桁上げ抽出には <code>+&amp;</code> / <code>-&amp;</code> と9ビットワイヤを用い、動的左シフト <code>&lt;&lt;</code> では拡張されたビット幅から <code>(7, 0)</code> で下位8ビットをスライスする。<br>
+3. <b>透過ラッチの完全防止</b>: <code>switch</code> や <code>when</code> で分岐する組合せ回路の内部ワイヤには必ず <code>WireDefault(0.U(...))</code> を適用する。<br>
+4. <b>不要フラグのマスク</b>: 算術演算以外（論理演算・シフト演算）が選択されている時は、<code>carryOut</code> を <code>false.B</code> にマスクして誤動作を防ぐ。
 </div>
 
 <!-- Note:
@@ -424,17 +394,22 @@ Chiselでは、8ビット結果 `out` に対して `out === 0.U` でZeroフラ�
 
 ---
 
-## 15. 本日の演習課題 (90分) — `Lab06`
+## 15. 本日の演習課題 (90分)
 
 本日の演習では、ALUを構成する3つの基本演算ユニットをそれぞれ独立したモジュールとして実装し、単体テスト (`sbt test`) で検証します。
 
-| 課題フォルダ | モジュール名 | 入出力仕様 | 実装のポイント |
-| :--- | :--- | :--- | :--- |
-| **`assignment1`**<br>（必須・30分） | **`ArithmeticUnit`**<br>（算術ユニット） | 入力: `a(8.W)`, `b(8.W)`, `op(Bool)`<br>出力: `res(8.W)`, `cout(Bool)` | `op=0`: 加算 (`+&`), `op=1`: 減算 (`-&`)<br>9ビット結果から `ext(7,0)` と `ext(8)` を分離 |
-| **`assignment2`**<br>（必須・25分） | **`LogicUnit`**<br>（論理ユニット） | 入力: `a(8.W)`, `b(8.W)`, `op(2.W)`<br>出力: `res(8.W)` | `WireDefault` + `switch(io.op)`<br>`0`: AND, `1`: OR, `2`: XOR, `3`: NOT `a` |
-| **`assignment3`**<br>（発展・30分） | **`ShiftUnit`**<br>（シフトユニット） | 入力: `a(8.W)`, `shamt(3.W)`, `op(Bool)`<br>出力: `res(8.W)` | `op=0`: 論理左シフト `(io.a << io.shamt)(7, 0)`<br>`op=1`: 論理右シフト `io.a >> io.shamt` |
+### 基本問題（必須 / 目安50分）
+1. **課題1 (`assignment1`): 算術ユニット `ArithmeticUnit`**
+   - 入力: `a(8.W)`, `b(8.W)`, `op(Bool)` ／ 出力: `res(8.W)`, `cout(Bool)`
+   - `op = false.B`: 加算 (`io.a +& io.b`)、`op = true.B`: 減算 (`io.a -& io.b`)
+2. **課題2 (`assignment2`): 論理ユニット `LogicUnit`**
+   - 入力: `a(8.W)`, `b(8.W)`, `op(2.W)` ／ 出力: `res(8.W)`
+   - `WireDefault` + `switch(io.op)` による `AND` (`0.U`), `OR` (`1.U`), `XOR` (`2.U`), `NOT a` (`3.U`)
 
-- **検証手順**: 各フォルダ（`assignment1`〜`assignment3`）で `sbt test` を実行し、`All tests passed.` を確認してください。
+### 発展問題（推奨 / 目安35分）
+3. **課題3 (`assignment3`): シフトユニット `ShiftUnit`**
+   - 入力: `a(8.W)`, `shamt(3.W)`, `op(Bool)` ／ 出力: `res(8.W)`
+   - `op = false.B`: 論理左シフト `(io.a << io.shamt)(7, 0)`、`op = true.B`: 論理右シフト `io.a >> io.shamt`
 
 <!-- Note:
 本日の演習課題は3つに分かれています。
@@ -457,8 +432,8 @@ assignment1 は算術ユニット `ArithmeticUnit`、assignment2 は論理ユニ
 - `ChiselEnum` を用いた型安全な状態定義と Moore型FSM による制御回路設計
 
 <!-- Note:
-第6回の講義は以上です。
+第6回の講義は以上となります。
 データパスの花形であるALUの内部構造と3つの演算ユニットの作り方が理解できたと思います。
 次回第7回は、こうしたデータパスを順番に制御する頭脳となる「有限状態機械（FSM）」を学びます。
-それでは演習を開始してください！
+それでは演習に移ります。Lab06の課題ディレクトリを開いて作業を開始してください。
 -->

@@ -9,18 +9,18 @@ size: 210mm x 297mm
 style: |
   section {
     font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    padding: 26px 36px;
+    font-size: 15px;
+    line-height: 1.6;
+    padding: 30px 40px;
     justify-content: flex-start;
   }
-  h1 { color: #1e3a8a; font-size: 22px; margin-bottom: 6px; border-bottom: 2px solid #1e3a8a; padding-bottom: 4px; }
-  h2 { color: #1e40af; font-size: 17px; border-bottom: 1.5px solid #3b82f6; margin-top: 12px; margin-bottom: 6px; padding-bottom: 2px; }
-  h3 { color: #2563eb; font-size: 14px; margin-top: 8px; margin-bottom: 4px; }
-  pre { font-size: 11.5px; margin: 4px 0; padding: 6px 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
-  .box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 6px 10px; margin: 6px 0; font-size: 12.5px; }
-  table { font-size: 12px; border-collapse: collapse; margin: 6px 0; width: 100%; }
-  th, td { border: 1px solid #cbd5e1; padding: 3px 6px; }
+  h1 { color: #1e3a8a; font-size: 24px; margin-bottom: 8px; border-bottom: 2px solid #1e3a8a; padding-bottom: 4px; }
+  h2 { color: #1e40af; font-size: 18px; border-bottom: 1.5px solid #3b82f6; margin-top: 16px; margin-bottom: 8px; padding-bottom: 2px; }
+  h3 { color: #2563eb; font-size: 15px; margin-top: 10px; margin-bottom: 4px; }
+  pre { font-size: 12.5px; margin: 6px 0; padding: 8px 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; }
+  .box { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 6px 12px; margin: 8px 0; font-size: 13.5px; }
+  table { font-size: 13px; border-collapse: collapse; margin: 8px 0; width: 100%; }
+  th, td { border: 1px solid #cbd5e1; padding: 4px 8px; }
   th { background: #f1f5f9; color: #1e293b; }
 ---
 
@@ -60,7 +60,7 @@ style: |
 
 ---
 
-## 3. 実機FPGA (TeCボード) 配線仕様と演習課題ガイドライン (90分)
+## 3. 実機FPGA (TeCボード) 配線仕様
 
 | 信号名 | 課題1 (`RingCounter`) | 課題2 (`JohnsonCounter`) | 課題3 (`GrayCodeCounter`) | TeCボード端子 (ピン番号) |
 | :--- | :---: | :---: | :---: | :--- |
@@ -70,5 +70,28 @@ style: |
 | `io_out` / `io_gray` | `io_out[3:0]` | `io_out[3:0]` | `io_gray[3:0]` | `DATA_LED[3:0]` (`P62, P61, P59, P58`) |
 | `io_bin` | — | — | `io_bin[3:0]` | 拡張LED (`P87, P85, P84, P83`) |
 
-- **基本問題 (必須・45分 / 70点)**: 課題1 `RingCounter` (35点)、課題2 `JohnsonCounter` (35点) の実装と検証 (`clkFreq = 4` でテスト)。
-- **発展問題 (推奨・35分 / 30点)**: 課題3 `GrayCodeCounter` (30点) の実装とハミング距離1の検証。
+---
+
+## 4. 本日の演習課題仕様 (Assignment Specifications)
+
+- **基本問題1 (`assignment1`)**: `RingCounter(width = 4, clkFreq = 9000000)` — 1秒ストローブ生成と `1.U` 初期化・MSB帰還による1-hot左循環シフト。
+- **基本問題2 (`assignment2`)**: `JohnsonCounter(width = 4, clkFreq = 9000000)` — 1秒ストローブ生成と `0.U` 初期化・MSB反転帰還 (`~state(width - 1)`) による8状態巡回。
+- **発展問題 (`assignment3`)**: `GrayCodeCounter(width = 4, clkFreq = 9000000)` — 1秒ストローブによるバイナリカウントアップと `binReg ^ (binReg >> 1)` 変換。
+
+---
+
+## 5. 本日の演習課題ガイドライン (90分)
+
+演習コードは `Lab04/` 配下の各課題ディレクトリ（`assignment1`〜`assignment3`）に配置されています。
+
+### 基本問題 (必須・目安50分 / 配点70点)
+1. **`RingCounter` (`assignment1`)** (目安25分 / 35点): 1-hot循環シフトの実装と検証 (`clkFreq = 4` でテスト)。
+2. **`JohnsonCounter` (`assignment2`)** (目安25分 / 35点): 反転帰還8状態巡回の実装と検証 (`clkFreq = 4` でテスト)。
+
+### 発展問題 (推奨・目安35分 / 配点30点)
+- **`GrayCodeCounter` (`assignment3`)** (目安35分 / 30点): グレイコード変換論理の実装とハミング距離1遷移の検証。
+
+### 採点ポイント
+- `RingCounter` が `1.U` に正しく初期化され、4状態を1-hotで循環するか (35点)
+- `JohnsonCounter` が `~state(width - 1)` 帰還により8状態を正しく巡回するか (35点)
+- `GrayCodeCounter` が `binReg ^ (binReg >> 1)` により全16状態をハミング距離1で巡回するか (30点)

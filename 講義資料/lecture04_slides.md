@@ -13,7 +13,7 @@ style: |
   }
   h1 { color: #1e3a8a; font-size: 34px; }
   h2 { color: #1e40af; border-bottom: 2px solid #3b82f6; font-size: 26px; }
-  pre { font-size: 15px; margin: 8px 0; }
+  pre { font-size: 16px; margin: 8px 0; }
   .box { background: #eff6ff; border-left: 5px solid #3b82f6; padding: 8px 14px; margin: 8px 0; }
   .badge { background: #dbeafe; color: #1e40af; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 16px; }
 ---
