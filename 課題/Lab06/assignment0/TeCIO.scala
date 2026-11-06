@@ -10,18 +10,8 @@ class TeCIO extends Module {
     val rd  = Output(UInt(8.W))
   })
 
-  val regA = RegInit(0.U(8.W))
-  val regB = RegInit(0.U(8.W))
-
-  when(io.weA) {
-    regA := io.wd
-  }
-
-  when(io.weB) {
-    regB := io.wd
-  }
-
-  io.rd := Mux(io.op, regB, regA)
+  // TODO: regA, regB を定義し、weA / weB による書き込みと op による選択出力を実装してください
+  io.rd := 0.U
 }
 
 object VerilogGenerator extends App {

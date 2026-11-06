@@ -10,22 +10,8 @@ class TeCIO extends Module {
     val res = Output(UInt(8.W))
   })
 
-  val regA = RegInit(0.U(8.W))
-  val regB = RegInit(0.U(8.W))
-
-  when(io.weA) {
-    regA := io.wd
-  }
-  when(io.weB) {
-    regB := io.wd
-  }
-
-  val lu = Module(new LogicUnit())
-
-  lu.io.op := io.op
-  lu.io.a  := regA
-  lu.io.b  := regB
-  io.res   := ~lu.io.res
+  // TODO: regA, regB への書き込みと、LogicUnit のインスタンス化および負論理出力 (~lu.io.res) を実装してください
+  io.res := 0.U
 }
 
 object VerilogGenerator extends App {
