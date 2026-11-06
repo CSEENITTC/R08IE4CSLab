@@ -3,15 +3,25 @@ import chisel3.util._
 
 class TeCIO extends Module {
   val io = IO(new Bundle {
-    val wd  = Input(UInt(8.W))
-    val op  = Input(Bool())
-    val weA = Input(Bool())
-    val weB = Input(Bool())
+    val wd    = Input(UInt(8.W))
+    val op   = Input(Bool()) // 0 (false.B): ADD, 1 (true.B): SUB
+    val weA   = Input(Bool())
+    val weB   = Input(Bool())
     val rd  = Output(UInt(8.W))
   })
 
-  // TODO: regA, regB を定義し、weA / weB による書き込みと op による選択出力を実装してください
-  io.rd := 0.U
+  val regA = RegInit(0.U(8.W))
+  val regB = RegInit(0.U(8.W))
+
+  when(io.weA) {
+    regA := io.wd
+  }
+
+  when(io.weB) {
+    regB := io.wd
+  }
+
+  io.rd  := Mux(io.op,regB,regA)
 }
 
 object VerilogGenerator extends App {
