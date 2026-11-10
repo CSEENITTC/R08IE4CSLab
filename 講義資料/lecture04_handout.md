@@ -33,17 +33,17 @@ style: |
 
 2進数のビット配列（左側が最上位ビット MSB `bit 3`、右側が最下位ビット LSB `bit 0`）において、**下位ビットから上位ビットへビットを移動（左シフト）**させ、最上位ビットを最下位ビットへ帰還させます。実機（9MHzクロック）では、内部の分周カウンタ `cntReg` から1秒ごとに1クロック幅のストローブパルス（`enRingCounter`, `enJohnsonCounter`, `enGrayCodeCounter`）を生成し、1秒間隔で状態を更新します。
 
-### ① 4ビット Ring カウンタ (`RingCounter`)
+### 1. 4ビット Ring カウンタ (`RingCounter`)
 - **初期値**: `RegInit(1.U(width.W))`（`0001_2`）および `clear` 時に `1.U` に初期化。
 - **シフト論理**: 最上位ビット `state(width - 1)` を最下位ビットに帰還（`Cat(state(width - 2, 0), state(width - 1))`）。
 - **状態遷移 ($N=4$ 状態)**: $0001_2 \to 0010_2 \to 0100_2 \to 1000_2 \to 0001_2$（常に1ビットのみが `1` の 1-hot 表現）。
 
-### ② 4ビット Johnson カウンタ (`JohnsonCounter`)
+### 2. 4ビット Johnson カウンタ (`JohnsonCounter`)
 - **初期値**: `RegInit(0.U(width.W))`（`0000_2`）および `clear` 時に `0.U` に初期化。
 - **シフト論理**: 最上位ビットの反転 `~state(width - 1)` を最下位ビットに帰還（`Cat(state(width - 2, 0), ~state(width - 1))`）。
 - **状態遷移 ($2N=8$ 状態)**: $0000 \to 0001 \to 0011 \to 0111 \to 1111 \to 1110 \to 1100 \to 1000 \to 0000$（隣接状態間の変化が常に1ビットのみでグリッチフリー）。
 
-### ③ 4ビット・グレイコード・カウンタ (`GrayCodeCounter`)
+### 3. 4ビット・グレイコード・カウンタ (`GrayCodeCounter`)
 - **原理**: 隣接する任意の2状態間のハミング距離（変化ビット数）が常に厳密に `1` となる符号。
 - **変換論理**: 内部バイナリカウンタ `binReg` を1秒ごとに `+1.U` し、出力段で 1ビット右シフト値との XOR をとる。
   $$\mathbf{gray} = \mathbf{binReg} \oplus (\mathbf{binReg} \gg 1) \quad \Longleftrightarrow \quad \text{\texttt{val gray = binReg \^{} (binReg >> 1)}}$$

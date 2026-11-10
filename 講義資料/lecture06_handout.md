@@ -81,7 +81,7 @@ class TeCIO extends Module {
 
 各課題ではまず演算サブモジュールを実装して **`sbt test`（シミュレーション）で単体検証**し、続いて **`TeCIO.scala` でサブモジュールをインスタンス化して FPGAボード（TeCボード）上で実機動作を確認**する。
 
-### ① `assignment1`: 算術ユニット (`ArithmeticUnit.scala` & `TeCIO.scala`)
+### 1. `assignment1`: 算術ユニット (`ArithmeticUnit.scala` & `TeCIO.scala`)
 8ビットの加算 (`ADD`) と減算 (`SUB`) を実行し、8ビット結果 `res` とキャリー／ボロー `cout` を出力する。**ビット幅拡張演算子 `+&` / `-&`** を用いて9ビットワイヤ `ext` に受け、下位8ビット `ext(7, 0)` と第8ビット `ext(8)` に分離する。
 
 ```scala
@@ -101,7 +101,7 @@ class ArithmeticUnit extends Module {
 ```
 - **`assignment1/TeCIO.scala`**: `val au = Module(new ArithmeticUnit)` を接続し、`io.rd := ~au.io.res` を `DATA_LED[7:0]` へ、`io.cout := ~au.io.cout` を **`C_LED` (`P46`)** へ出力する。
 
-### ② `assignment2`: 論理ユニット (`LogicUnit.scala` & `TeCIO.scala`)
+### 2. `assignment2`: 論理ユニット (`LogicUnit.scala` & `TeCIO.scala`)
 ビット単位（Bitwise）の `AND`, `OR`, `XOR`, `NOT` を2ビット選択信号 `op` で切り替える。透過ラッチを防ぐため、`WireDefault(0.U(8.W))` で初期化したワイヤに対して `switch / is` で割り当てる。
 
 ```scala
@@ -124,7 +124,7 @@ class LogicUnit extends Module {
 ```
 - **`assignment2/TeCIO.scala`**: `val lu = Module(new LogicUnit())` を接続し、`BREAK_SW` (`op[1]`) と `STEP_SW` (`op[0]`) の2ビットで演算を選択して `io.res := ~lu.io.res` を `DATA_LED[7:0]` へ出力する。
 
-### ③ `assignment3`: シフトユニット (`ShiftUnit.scala` & `TeCIO.scala`)
+### 3. `assignment3`: シフトユニット (`ShiftUnit.scala` & `TeCIO.scala`)
 8ビット入力 `a` を、**3ビットで宣言したシフト量 `shamt` (`Input(UInt(3.W))`: 0〜7ビット)** だけ論理左シフト (`<<`) または論理右シフト (`>>`) する。Chiselの動的左シフト `io.a << io.shamt` は最大シフト時にも上位ビットが失われないよう結果幅が $8 + (2^3 - 1) = 15$ ビットへ自動拡張されるため、**`(io.a << io.shamt)(7, 0)`** で下位8ビットをスライスする。
 
 <p align="center">

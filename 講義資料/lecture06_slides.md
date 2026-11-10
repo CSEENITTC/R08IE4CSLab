@@ -131,7 +131,7 @@ class TopModule extends Module {
 
 ---
 
-## 5. サブモジュール①：算術ユニット (`ArithmeticUnit`) — 課題1
+## 5. サブモジュール1：算術ユニット (`ArithmeticUnit`) — 課題1
 
 8ビットの加算 (`ADD`) と減算 (`SUB`) を行い、**8ビット結果 `res`** と **キャリー／ボロー出力 `cout`** を生成する。
 
@@ -188,7 +188,7 @@ class ArithmeticUnit extends Module {
 
 ---
 
-## 7. サブモジュール②：論理ユニット (`LogicUnit`) — 課題2
+## 7. サブモジュール2：論理ユニット (`LogicUnit`) — 課題2
 
 4種類のビット単位（Bitwise）論理演算を `op`（2ビット）で切り替える組合せ回路。
 
@@ -240,7 +240,7 @@ class LogicUnit extends Module {
 
 ---
 
-## 9. サブモジュール③：シフトユニット (`ShiftUnit`) — 課題3
+## 9. サブモジュール3：シフトユニット (`ShiftUnit`) — 課題3
 
 データを指定ビット数（`shamt`: Shift Amount）だけ左右へ移動させる**バレルシフタ（Barrel Shifter）**回路。
 

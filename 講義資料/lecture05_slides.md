@@ -193,7 +193,7 @@ $$1\text{ Hz Pulse} \longrightarrow \underbrace{10\text{進 (0〜9)}}_{\text{1�
 
 ---
 
-## 7. サブモジュール①: 1Hzの`en`信号を出すモジュール (`OneHzGenerator`)
+## 7. サブモジュール1: 1Hzの`en`信号を出すモジュール (`OneHzGenerator`)
 
 第3回で作成した `OneHzGenerator` をサブモジュールとして配置します。
 
@@ -231,7 +231,7 @@ class OneHzGenerator(val clkFreq: Int = 9000000) extends Module {
 
 ---
 
-## 8. サブモジュール②③: 10進・6進カウンタ (`ModuloNCounter`)
+## 8. サブモジュール2・3: 10進・6進カウンタ (`ModuloNCounter`)
 
 同じく第3回で作成した汎用 `ModuloNCounter` から、引数 `n` と `width` を変えて**10進カウンタ**と**6進カウンタ**を生成します。
 
