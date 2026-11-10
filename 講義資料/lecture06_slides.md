@@ -376,9 +376,43 @@ Chiselでは、8ビット結果 `out` に対して `out === 0.U` でZeroフラ�
 
 ---
 
-## 14. `TeCIO` と `TeCIO.ucf` を用いた FPGAボード実機動作確認
+## 14. `TeCIO.scala` の構造と動作原理 (`assignment0`)
 
-TeCボードの `DATA_SW` は1組（8bit）のため、`TeCIO` 内の **`regA`**（`INC_SW` で書込）と **`regB`**（`DEC_SW` で書込）に値を保持させて各演算ユニットへ入力する。
+TeCボードの8ビットデータ入力スイッチ（`DATA_SW[7:0]`）は1組しか存在しないため、2入力演算器を動かすには内部に2つのレジスタ **`regA`** と **`regB`** を設け、書き込みイネーブル信号（`weA`, `weB`）で順番に値を保持させる。
+
+<p align="center">
+  <img src="figures/lecture06_tecio_assign0.svg" width="540">
+</p>
+
+```scala
+class TeCIO extends Module {
+  val io = IO(new Bundle {
+    val wd  = Input(UInt(8.W))  // DATA_SW[7:0]: 書き込みデータ
+    val op  = Input(Bool())     // STEP_SW (0: regA選択, 1: regB選択)
+    val weA = Input(Bool())     // INC_SW: regA 書き込みイネーブル
+    val weB = Input(Bool())     // DEC_SW: regB 書き込みイネーブル
+    val rd  = Output(UInt(8.W)) // DATA_LED[7:0]: 負論理反転出力
+  })
+  val regA = RegInit(0.U(8.W)); val regB = RegInit(0.U(8.W))
+  when(io.weA) { regA := io.wd } // INC_SW が押されたとき wd を regA に保持
+  when(io.weB) { regB := io.wd } // DEC_SW が押されたとき wd を regB に保持
+  io.rd := ~Mux(io.op, regB, regA) // 選択結果を反転(~)して DATA_LED へ出力
+}
+```
+
+<!-- Note:
+ここで、実機のFPGAボード（TeCボード）で2入力の演算器を動かすためのラッパー回路「TeCIO.scala」の仕組みを詳しく解説します。
+TeCボードには8ビットのトグルスイッチ（DATA_SW）が1組しかありません。そのため、入力 a と入力 b を同時にスイッチから直接与えることができません。
+そこで TeCIO モジュールでは、内部に8ビットレジスタ regA と regB を用意します。
+まず DATA_SW（io.wd）で1つ目の値を用意して INC_SW（io.weA）を押すと regA に値が保存されます。次に DATA_SW で2つ目の値を用意して DEC_SW（io.weB）を押すと regB に値が保存されます。
+assignment0 では、この regA と regB を Mux(io.op, regB, regA) で切り替え、TeCボードのLED回路（負論理）に合わせてビット反転（~）して io.rd（DATA_LED）へ出力します。
+-->
+
+---
+
+## 15. 各課題 (`assignment1`〜`3`) における `TeCIO.scala` と `TeCIO.ucf`
+
+`assignment1`〜`assignment3` の `TeCIO.scala` では、`Mux` の代わりに各演算ユニットを `Module(new ...)` でインスタンス化し、`regA` と `regB` を接続する。
 - **`assignment3` (`ShiftUnit`) の注意点**: シフト量 `shamt` は **3ビット (`3.W`)** のため、`TeCIO` 内の `regB` も **`RegInit(0.U(3.W))`** で宣言し、`when(io.weB) { regB := io.wd(2, 0) }` として下位3ビットを格納する。
 
 | 信号名 (`TeCIO.ucf`) | TeCボード端子 | ピン番号 (`LOC`) | 各課題 (`assignment0`〜`3`) での役割 |
@@ -389,14 +423,15 @@ TeCボードの `DATA_SW` は1組（8bit）のため、`TeCIO` 内の **`regA`**
 | `io_rd` / `io_res` / `io_cout` | **`DATA_LED` / `C_LED`** | `P81..P58` / `P46` (`cout`) | **演算結果を `DATA_LED` へ出力**（`assignment1` の `cout` は `C_LED`） |
 
 <!-- Note:
-各課題では、単体モジュールを sbt test でシミュレーション確認したあと、TeCIO モジュールに組み込んで FPGAボード（TeCボード）上で実機確認を行います。
-TeCボードには8ビットのDATA_SWが1組しかありません。そこでまず assignment0 の TeCIO.scala で、DATA_SWの値を INC_SW（weA）で regA に、DEC_SW（weB）で regB に書き込む仕組みを確認します。
-assignment1 では加減算結果のほかにキャリー出力 cout を C_LED（P46）へ出力します。assignment2 では BREAK_SW と STEP_SW の2ビットを op として与えます。そして assignment3（ShiftUnit）では、シフト量 shamt が3ビットであるため、regB も 3ビット（RegInit(0.U(3.W))）で宣言し、io.wd(2, 0) を書き込む点に注意してください。
+assignment1 から assignment3 の TeCIO.scala は、先ほどの assignment0 の Mux の部分を、作成した各演算サブモジュール（ArithmeticUnit, LogicUnit, ShiftUnit）に置き換えた構造になっています。
+assignment1 では加減算結果のほかにキャリー出力 cout を C_LED（P46）へ反転出力（~au.io.cout）します。
+assignment2 では BREAK_SW と STEP_SW の2ビットを op として与えます。
+そして assignment3（ShiftUnit）では、シフト量 shamt が3ビットであるため、regB も 3ビット（RegInit(0.U(3.W))）で宣言し、io.wd(2, 0) を書き込む点に注意してください。
 -->
 
 ---
 
-## 15. 本日の演習課題 (90分)
+## 16. 本日の演習課題 (90分)
 
 ### 1. 導入確認 (`assignment0` / シミュレーション & FPGA実機)
 - **`TeCIO`**: `regA`, `regB` への書き込み (`weA`, `weB`) と選択読み出し (`rd := ~Mux(io.op, regB, regA)`) を確認。
@@ -414,7 +449,7 @@ assignment1 では加減算結果のほかにキャリー出力 cout を C_LED�
 
 ---
 
-## 16. 第6回 まとめ & 次回予告
+## 17. 第6回 まとめ & 次回予告
 
 ### 本日の重要ポイント
 1. 大規模な組合せ回路（ALU）は、**算術・論理・シフト**の各機能サブモジュールに分割して設計・単体検証する。
