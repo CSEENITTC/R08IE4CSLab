@@ -10,6 +10,9 @@ class TeCIO extends Module {
     val res = Output(UInt(8.W))
   })
 
+  val regA = RegInit(0.U(8.W))
+  val regB = RegInit(0.U(8.W))
+
   // TODO: regA, regB への書き込みと、LogicUnit のインスタンス化および負論理出力 (~lu.io.res) を実装してください
   io.res := 0.U
 }

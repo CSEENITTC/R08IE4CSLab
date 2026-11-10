@@ -21,7 +21,7 @@ class TeCIO extends Module {
     regB := io.wd
   }
 
-  io.rd  := Mux(io.op,regB,regA)
+  io.rd  := ~Mux(io.op,regB,regA)
 }
 
 object VerilogGenerator extends App {

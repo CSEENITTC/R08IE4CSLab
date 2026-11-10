@@ -16,10 +16,10 @@ class ArithmeticUnit extends Module {
   io.cout := false.B
 }
 
-object VerilogGenerator extends App {
-  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
-    new ArithmeticUnit,
-    Array("--target-dir", "generated"),
-    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
-  )
-}
+// object VerilogGenerator extends App {
+//   _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+//     new ArithmeticUnit,
+//     Array("--target-dir", "generated"),
+//     Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+//   )
+// }

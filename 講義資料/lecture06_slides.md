@@ -376,46 +376,40 @@ Chiselでは、8ビット結果 `out` に対して `out === 0.U` でZeroフラ�
 
 ---
 
-## 14. 応用課題：`TeCIO` を用いた `assignment2` の実機動作確認
+## 14. `TeCIO` と `TeCIO.ucf` を用いた FPGAボード実機動作確認
 
-TeCボードの `DATA_SW` は1組（8bit）のため、`TeCIO` 内の **`regA`**（`INC_SW` で書込）と **`regB`**（`DEC_SW` で書込）に値を保持させて `LogicUnit` へ入力する（`assignment0` でレジスタ書込・読出の基礎を確認）。
+TeCボードの `DATA_SW` は1組（8bit）のため、`TeCIO` 内の **`regA`**（`INC_SW` で書込）と **`regB`**（`DEC_SW` で書込）に値を保持させて各演算ユニットへ入力する。
+- **`assignment3` (`ShiftUnit`) の注意点**: シフト量 `shamt` は **3ビット (`3.W`)** のため、`TeCIO` 内の `regB` も **`RegInit(0.U(3.W))`** で宣言し、`when(io.weB) { regB := io.wd(2, 0) }` として下位3ビットを格納する。
 
-<p align="center">
-  <img src="figures/lecture06_tecio_logic.svg" width="580">
-</p>
-
-| 信号名 (`TeCIO.ucf`) | TeCボード端子 | ピン番号 (`LOC`) | 機能・操作内容 |
+| 信号名 (`TeCIO.ucf`) | TeCボード端子 | ピン番号 (`LOC`) | 各課題 (`assignment0`〜`3`) での役割 |
 | :--- | :--- | :--- | :--- |
-| `io_wd[7:0]` | **`DATA_SW[7:0]`** | `P26,27,29,30,32,33,34,35` | **書き込みデータの用意** (8bit) |
-| `io_weA` / `io_weB` | **`INC_SW` / `DEC_SW`** | `P22` / `P23` | **`regA` / `regB` にデータを書き込み** |
-| `io_op[1:0]` | **`BREAK_SW`, `STEP_SW`** | `P14` (`op[1]`), `P15` (`op[0]`) | **2ビット `op`** (`00`:AND, `01`:OR, `10`:XOR, `11`:NOT) |
-| `io_res[7:0]` | **`DATA_LED[7:0]`** | `P81,80,79,78,62,61,59,58` | **演算結果を `DATA_LED` へ出力** (`~lu.io.res`) |
+| `io_wd[7:0]` | **`DATA_SW[7:0]`** | `P26,27,29,30,32,33,34,35` | **書き込みデータの用意** (`assignment3` の `regB` は `wd[2:0]`) |
+| `io_weA` / `io_weB` | **`INC_SW` / `DEC_SW`** | `P22` / `P23` | **`regA` / `regB` にデータを書き込み** (`reset` は `P120`) |
+| `io_op` / `io_op[1:0]` | **`BREAK_SW`, `STEP_SW`** | `P14` (`op[1]`), `P15` (`op[0]`) | `assignment0,1,3`: `STEP_SW` (1bit) / `assignment2`: 2bit `op` |
+| `io_rd` / `io_res` / `io_cout` | **`DATA_LED` / `C_LED`** | `P81..P58` / `P46` (`cout`) | **演算結果を `DATA_LED` へ出力**（`assignment1` の `cout` は `C_LED`） |
 
 <!-- Note:
-応用課題として、assignment2（LogicUnit）をFPGAボード（TeCボード）上で動作確認します。
+各課題では、単体モジュールを sbt test でシミュレーション確認したあと、TeCIO モジュールに組み込んで FPGAボード（TeCボード）上で実機確認を行います。
 TeCボードには8ビットのDATA_SWが1組しかありません。そこでまず assignment0 の TeCIO.scala で、DATA_SWの値を INC_SW（weA）で regA に、DEC_SW（weB）で regB に書き込む仕組みを確認します。
-そして assignment2 の TeCIO.scala では、その regA と regB を LogicUnit の入力 a, b に繋ぎ、BREAK_SW と STEP_SW の2ビットを op として与え、演算結果を DATA_LED へ出力して実機確認します。
+assignment1 では加減算結果のほかにキャリー出力 cout を C_LED（P46）へ出力します。assignment2 では BREAK_SW と STEP_SW の2ビットを op として与えます。そして assignment3（ShiftUnit）では、シフト量 shamt が3ビットであるため、regB も 3ビット（RegInit(0.U(3.W))）で宣言し、io.wd(2, 0) を書き込む点に注意してください。
 -->
 
 ---
 
 ## 15. 本日の演習課題 (90分)
 
-### 1. 導入確認 (`assignment0` / シミュレーション)
-- **`TeCIO`**: `regA`, `regB` への書き込み (`weA`, `weB`) と選択読み出し (`rd`) を `sbt test` で確認。
+### 1. 導入確認 (`assignment0` / シミュレーション & FPGA実機)
+- **`TeCIO`**: `regA`, `regB` への書き込み (`weA`, `weB`) と選択読み出し (`rd := ~Mux(io.op, regB, regA)`) を確認。
 
-### 2. 演算ユニット実装 (`assignment1`〜`assignment3` / シミュレーション)
-1. **`assignment1` (`ArithmeticUnit`)**: 加減算 (`+&` / `-&`) と `cout` 出力（**シミュレーションのみ**）
-2. **`assignment2` (`LogicUnit`)**: `WireDefault` + `switch(io.op)` による4種論理演算
-3. **`assignment3` (`ShiftUnit`)**: 論理左シフト `(io.a << io.shamt)(7, 0)` と右シフト `>>`（**シミュレーションのみ**）
-
-### 3. 応用課題 (`assignment2` / FPGAボード実機動作確認)
-- `assignment2/TeCIO.scala` を `sbt run` で合成し、TeCボード上で `DATA_SW`・`INC_SW` (`regA`)・`DEC_SW` (`regB`)・`BREAK_SW`/`STEP_SW` (`op` 2ビット) を操作して `DATA_LED` の出力を確認。
+### 2. 演算ユニットと `TeCIO` の実装 (`assignment1`〜`assignment3` / シミュレーション & FPGA実機)
+1. **`assignment1` (`ArithmeticUnit` + `TeCIO`)**: 加減算 (`+&` / `-&`) と `cout` (`C_LED`: `P46`) の実装・確認
+2. **`assignment2` (`LogicUnit` + `TeCIO`)**: `WireDefault` + `switch(io.op)` による4種論理演算（2bit `op`: `P14, P15`）
+3. **`assignment3` (`ShiftUnit` + `TeCIO`)**: **3ビット `shamt` (`3.W`)** による論理左シフト `(io.a << io.shamt)(7, 0)`・右シフト `>>` と、3ビット `regB` (`io.wd(2, 0)`) を用いた実機確認
 
 <!-- Note:
 本日の演習の進め方です。
-まず assignment0 で TeCIO のレジスタ書き込み動作を確認したあと、assignment1（ArithmeticUnit）、assignment2（LogicUnit）、assignment3（ShiftUnit）をそれぞれ実装し、sbt test のシミュレーションで動作を確認してください（assignment1とassignment3はシミュレーションのみです）。
-そして応用課題として、assignment2 を TeCIO と組み合わせて FPGAボードに書き込み、実機のスイッチとLEDで論理演算の動作を確認してください。
+まず assignment0 で TeCIO のレジスタ書き込みと選択読み出し動作を確認します。
+続いて assignment1（ArithmeticUnit）、assignment2（LogicUnit）、assignment3（ShiftUnit）の各演算ユニットを実装して sbt test でシミュレーション検証し、さらに各フォルダの TeCIO.scala を実装して sbt run で Verilog を生成し、追加された UCF ファイルを用いて FPGAボード上で実機動作を確認してください。
 -->
 
 ---

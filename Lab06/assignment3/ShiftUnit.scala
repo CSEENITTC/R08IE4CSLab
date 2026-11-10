@@ -14,10 +14,10 @@ class ShiftUnit extends Module {
   io.res := 0.U
 }
 
-object VerilogGenerator extends App {
-  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
-    new ShiftUnit,
-    Array("--target-dir", "generated"),
-    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
-  )
-}
+// object VerilogGenerator extends App {
+//   _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+//     new ShiftUnit,
+//     Array("--target-dir", "generated"),
+//     Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+//   )
+// }
