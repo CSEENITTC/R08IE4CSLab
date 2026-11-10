@@ -52,6 +52,10 @@ style: |
 
 TeCボード上の8ビットデータ入力スイッチ（`DATA_SW[7:0]`）は1組しか存在しないため、2つの入力 `a`, `b` を必要とする演算器を実機で動作させるには、内部に2つのレジスタ **`regA`** と **`regB`** を設け、書き込みイネーブル信号（`weA`: `INC_SW`, `weB`: `DEC_SW`）で順番にデータを保持させる。
 
+<p align="center">
+  <img src="figures/lecture06_tecio_assign0.svg" width="560">
+</p>
+
 ```scala
 class TeCIO extends Module {
   val io = IO(new Bundle {

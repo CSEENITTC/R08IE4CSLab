@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 250" width="100%" height="100%">
+  <style>
+    .title { font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 700; fill: #0f172a; text-anchor: middle; }
+    .subtitle { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; fill: #475569; text-anchor: middle; }
+    .label { font-family: system-ui, -apple-system, sans-serif; font-size: 12px; font-weight: 600; fill: #1e293b; }
+    .sw-label { font-family: system-ui, -apple-system, sans-serif; font-size: 11px; font-weight: 700; fill: #b45309; }
+    .wire-label { font-family: 'SF Mono', Consolas, Monaco, monospace; font-size: 11px; fill: #2563eb; font-weight: 600; }
+    .wire { stroke: #2563eb; stroke-width: 2; fill: none; }
+    .wire-ctrl { stroke: #d97706; stroke-width: 1.8; fill: none; }
+    .box-top { fill: #f8fafc; stroke: #3b82f6; stroke-width: 2; stroke-dasharray: 6,4; rx: 12; }
+    .box-seq { fill: #f0fdf4; stroke: #22c55e; stroke-width: 1.8; rx: 6; filter: url(#shadow); }
+    .gate { fill: #ffffff; stroke: #1e40af; stroke-width: 1.8; filter: url(#shadow); }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1e40af"/>
+    </marker>
+    <marker id="arrow-ctrl" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#b45309"/>
+    </marker>
+    <filter id="shadow" x="-3%" y="-6%" width="106%" height="116%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.06"/>
+    </filter>
+  </defs>
+
+  <!-- Background plate -->
+  <rect width="760" height="250" fill="#ffffff" rx="10" stroke="#e2e8f0" stroke-width="1.2"/>
+
+  <!-- Top Module Boundary -->
+  <rect x="155" y="15" width="465" height="220" class="box-top"/>
+  <text x="275" y="36" class="title" style="fill:#1e40af;">assignment0: TeCIO (レジスタ書込・選択読出)</text>
+
+  <!-- DATA_SW -> io.wd -->
+  <text x="16" y="102" class="sw-label">DATA_SW[7:0]</text>
+  <text x="16" y="118" class="wire-label">io.wd (8bit)</text>
+  <line x1="115" y1="108" x2="185" y2="108" class="wire"/>
+  <circle cx="185" cy="108" r="3.5" fill="#2563eb"/>
+  <line x1="185" y1="108" x2="185" y2="72" class="wire"/>
+  <line x1="185" y1="72" x2="225" y2="72" class="wire" marker-end="url(#arrow)"/>
+  <line x1="185" y1="108" x2="185" y2="156" class="wire"/>
+  <line x1="185" y1="156" x2="225" y2="156" class="wire" marker-end="url(#arrow)"/>
+
+  <!-- INC_SW -> io.weA -->
+  <text x="16" y="54" class="sw-label">INC_SW (P22)</text>
+  <text x="16" y="68" class="wire-label">io.weA</text>
+  <line x1="115" y1="56" x2="225" y2="56" class="wire-ctrl" marker-end="url(#arrow-ctrl)"/>
+
+  <!-- DEC_SW -> io.weB -->
+  <text x="16" y="168" class="sw-label">DEC_SW (P23)</text>
+  <text x="16" y="182" class="wire-label">io.weB</text>
+  <line x1="115" y1="170" x2="225" y2="170" class="wire-ctrl" marker-end="url(#arrow-ctrl)"/>
+
+  <!-- regA -->
+  <rect x="225" y="46" width="120" height="48" class="box-seq"/>
+  <text x="285" y="67" class="title" style="fill:#166534;">regA (8bit)</text>
+  <text x="285" y="83" class="subtitle">when(io.weA)</text>
+
+  <!-- regB -->
+  <rect x="225" y="136" width="120" height="48" class="box-seq"/>
+  <text x="285" y="157" class="title" style="fill:#166534;">regB (8bit)</text>
+  <text x="285" y="173" class="subtitle">when(io.weB)</text>
+
+  <!-- regA, regB -> MUX -->
+  <line x1="345" y1="70" x2="415" y2="70" class="wire"/>
+  <line x1="415" y1="70" x2="415" y2="96" class="wire"/>
+  <line x1="415" y1="96" x2="450" y2="96" class="wire" marker-end="url(#arrow)"/>
+  <text x="380" y="64" class="wire-label">regA</text>
+
+  <line x1="345" y1="160" x2="415" y1="160" y2="160" class="wire"/>
+  <line x1="415" y1="160" x2="415" y2="128" class="wire"/>
+  <line x1="415" y1="128" x2="450" y2="128" class="wire" marker-end="url(#arrow)"/>
+  <text x="380" y="154" class="wire-label">regB</text>
+
+  <!-- MUX (Mux(io.op, regB, regA)) -->
+  <polygon points="450,76 510,92 510,132 450,148" class="gate"/>
+  <text x="480" y="116" class="title" style="font-size:12px;">MUX</text>
+  <text x="462" y="96" class="subtitle" style="font-size:11px; font-weight:700;">0</text>
+  <text x="462" y="135" class="subtitle" style="font-size:11px; font-weight:700;">1</text>
+
+  <!-- STEP_SW -> io.op -->
+  <text x="395" y="218" class="sw-label">STEP_SW (P15)</text>
+  <line x1="480" y1="202" x2="480" y2="140" class="wire-ctrl" marker-end="url(#arrow-ctrl)"/>
+  <text x="490" y="185" class="wire-label">io.op (0:regA, 1:regB)</text>
+
+  <!-- Negation (~) and Output to DATA_LED -->
+  <line x1="510" y1="112" x2="560" y2="112" class="wire"/>
+  <rect x="560" y="98" width="32" height="28" class="gate" rx="4"/>
+  <text x="576" y="117" class="title">~</text>
+  <line x1="592" y1="112" x2="645" y2="112" class="wire" marker-end="url(#arrow)"/>
+  <text x="652" y="106" class="sw-label">DATA_LED[7:0]</text>
+  <text x="652" y="122" class="wire-label">io.rd (8bit)</text>
+</svg>
