@@ -1,7 +1,7 @@
 import chisel3._
 import chisel3.util._
 
-// 発展問題: 歩行者割り込み付き 交通信号機コントローラ
+// 課題3: 歩行者割り込み付き 交通信号機コントローラ
 class TrafficLightController extends Module {
   val io = IO(new Bundle {
     val pedestrianButton = Input(Bool())

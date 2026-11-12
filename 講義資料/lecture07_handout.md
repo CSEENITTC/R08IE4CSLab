@@ -57,68 +57,61 @@ Chiselでは `ChiselEnum` を用いて型安全な列挙型状態を定義しま
 
 ```scala
 object State extends ChiselEnum {
-  val sIDLE, s1, s10, s101 = Value
+  val s0, s1, s2, s3 = Value
 }
-import State._
-
-val stateReg = RegInit(sIDLE) // 初期状態 sIDLE で同期リセット
-val nextState = WireDefault(stateReg) // ラッチ防止のデフォルト値
-
-switch(stateReg) {
-  is(sIDLE) { when(io.in) { nextState := s1 } }
-  is(s1)    { nextState := Mux(io.in, s1, s10) }
-  is(s10)   { nextState := Mux(io.in, s101, sIDLE) }
-  is(s101)  { nextState := Mux(io.in, s1, s10) } // 重複系列を考慮
-}
-stateReg := nextState
-
-// Moore型出力生成（状態レジスタのみから生成）
-io.detected := (stateReg === s101)
+val stateReg = RegInit(State.s0) // 初期状態 s0 で同期リセット
 ```
 
 ---
 
-## 3. 重複検出 (Overlapping Sequence) の設計
+## 3. 本日の演習課題仕様 (`assignment1`〜`assignment3`)
 
-入力ストリーム `1 -> 0 -> 1 -> 0 -> 1` が入力された場合：
-- 3拍目の "101" で 1回目の検出パルスを出力。
-- 5拍目の "101" は直前の "1" を先頭ビットとして再利用（共有）するため、2回目の検出パルスを出力。
-- したがって、`s101` の状態で `io.in === false.B` が来たら、`sIDLE` ではなく `s10` へ遷移させる設計が不可欠です。
+### 1. `assignment1`: 4状態を遷移し続けるFSM (`FourStateFSM`)
+- **状態定義**: `ChiselEnum` による 4状態 (`s0`, `s1`, `s2`, `s3`)
+- **入力**: `run` (Bool: `RUN_SW` `P16`), `clear` (Bool: `RESET_SW` `P120`)
+- **出力**: `out` (UInt(4.W): `DATA_LED[3:0]`), `runLED` (Bool: `RUN_LED` `P43`)
+- **論理仕様**:
+  - **リセットスイッチ (`clear`)** が押されたら初期状態 `State.s0` に戻り停止。
+  - **ランボタン (`run`)** が押されたら動作を開始し（`runningReg := true.B` で保持）、`s0 -> s1 -> s2 -> s3 -> s0` の4状態を巡回遷移し続ける。
+  - 状態は4ビットの**ワンホット（`s0`: `"b0001".U`, `s1`: `"b0010".U`, `s2`: `"b0100".U`, `s3`: `"b1000".U`）**として出力する。
 
----
+<p align="center">
+  <img src="figures/lecture07_four_state_fsm.svg" width="560">
+</p>
 
-## 4. 本日の演習課題仕様 (Assignment Specifications)
-
-### 基本問題: Moore型 "101" パターン検出器 (`SequenceDetector101`)
+### 2. `assignment2`: Moore型 "101" パターン検出器 (`SequenceDetector101`)
 - **状態定義**: `ChiselEnum` による 4状態 (`sIDLE`, `s1`, `s10`, `s101`)
 - **入力**: `in` (Bool) | **出力**: `detected` (Bool)
-- **必須要件**:
-  - Moore型設計（出力は `stateReg === s101` のみから生成）。
-  - 重複系列（"10101" $\to$ 2回アサート）の正確な検出。
+- **論理仕様**:
+  - Moore型設計（出力は `stateReg === State.s101` のみから生成）。
+  - 入力ストリーム `1 -> 0 -> 1 -> 0 -> 1` のような**重複系列（"10101" $\to$ 2回アサート）**を正確に検出するため、`s101` 状態で `in === false.B` のときは `s10`、`in === true.B` のときは `s1` へ遷移させる。
 
-### 発展問題: 歩行者割り込み付き 交通信号機コントローラ (`TrafficLightController`)
+```scala
+switch(stateReg) {
+  is(State.sIDLE) { when(io.in)  { stateReg := State.s1 } }
+  is(State.s1)    { when(!io.in) { stateReg := State.s10 } }
+  is(State.s10)   { when(io.in)  { stateReg := State.s101 }.otherwise { stateReg := State.sIDLE } }
+  is(State.s101)  { when(io.in)  { stateReg := State.s1   }.otherwise { stateReg := State.s10 } }
+}
+io.detected := (stateReg === State.s101)
+```
+
+### 3. `assignment3`: 歩行者割り込み付き 交通信号機コントローラ (`TrafficLightController`)
+- **状態定義**: `ChiselEnum` による 4状態 (`sVehGreen`, `sVehYellow`, `sVehRedPedGreen`, `sVehRedPedYellow`)
 - **入力**: `pedestrianButton` (Bool)
 - **出力**: `mainLight` (UInt(2.W): 0=Green, 1=Yellow, 2=Red), `pedLight` (Bool: 0=Red, 1=Green)
 - **論理仕様**:
-  - 歩行者ボタン入力をラッチするリクエストフラグ。
-  - タイマカウンタとの連動により、車道青 $\to$ 車道黄 $\to$ 車道赤/歩行者青 $\to$ 歩行者赤/車道青 へと安全な遷移時間を保証するFSM。
+  - 歩行者ボタン入力をラッチするリクエストフラグ (`pedReqReg`) と内部タイマ (`timerReg`) を連動させ、車道青 $\to$ 車道黄 $\to$ 車道赤/歩行者青 $\to$ 車道赤/歩行者黄(赤) $\to$ 車道青 へと安全に遷移するMoore型FSM。
 
 ---
 
-## 5. 本日の演習課題ガイドライン (90分)
+## 4. 本日の演習課題ガイドライン (90分)
 
-演習コードは `Lab07/` 配下の各課題ディレクトリに分かれて配置されています。
+演習コードは `Lab07/` 配下の各課題ディレクトリ（`assignment1`〜`assignment3`）に配置されています。
 
-### 基本問題 (必須・目安45分 / 配点70点)
-- `ChiselEnum` 状態定義と Moore型 FSM 状態遷移回路の実装 (40点)。
-- 単一検出および "10101" 重複系列の正確なパルス出力 (30点)。
-
-### 発展問題 (推奨・目安35分 / 配点30点)
-- ボタン押下のラッチ回路と内部タイマとの連動 (15点)。
-- 車道と歩行者の安全な状態遷移制御シーケンスの実装 (15点)。
-
-### 採点ポイント
-- `ChiselEnum` による型安全な記述がなされているか (20点)
-- Moore型出力定義が徹底され、入力依存のグリッチが存在しないか (25点)
-- 重複系列パターンに対する遷移論理の正確性 (25点)
-- 交通信号コントローラのデッドロックのない安全設計 (30点)
+1. **基本問題1 (`assignment1`: `FourStateFSM`)**:
+   - リセットスイッチ (`clear`) による初期状態 `s0` 復帰、ランボタン (`run`) 押下による動作開始ラッチ、および4状態のワンホット出力 (`0001` $\to$ `0010` $\to$ `0100` $\to$ `1000`) を実装し、`sbt test` で確認する（`FourStateFSM.ucf` を用いた実機確認にも対応）。
+2. **基本問題2 (`assignment2`: `SequenceDetector101`)**:
+   - `ChiselEnum` 状態定義と重複系列（`"10101"`）に対応したMoore型FSMを実装し、`sbt test` で検証する。
+3. **発展問題 (`assignment3`: `TrafficLightController`)**:
+   - 歩行者ボタン押下のラッチ回路と内部タイマを連動させた4状態信号機FSMを実装し、`sbt test` で検証する。

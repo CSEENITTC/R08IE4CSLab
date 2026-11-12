@@ -33,8 +33,9 @@ style: |
   4. なぜ高信頼システムではMoore型FSMが強く推奨されるのか？
   5. Chiselにおける型安全な状態定義: `ChiselEnum`
   6. 3プロセス分離記述スタイル（状態保持・遷移判定・出力デコード）
-  7. 実践例: 連続ビットパターン "101" シーケンス検出器
-  8. 本日の演習課題（基本: 101検出器 / 発展: 交通信号機コントローラ）
+  7. 課題1 (`assignment1`): 4状態巡回FSM（ワンホット出力・リセット／ラン制御）
+  8. 課題2 (`assignment2`): 連続ビットパターン "101" シーケンス検出器
+  9. 課題3 (`assignment3`): 交通信号機コントローラと本日の演習課題
 
 <!-- Note:
 第7回の講義へようこそ。
@@ -194,7 +195,70 @@ switch文の中で各状態における行き先を明確にし、出力は状�
 
 ---
 
-## 7. 題材: "101" パターンシーケンス検出器
+## 7. 課題1 (`assignment1`): 4状態を遷移し続けるFSM (`FourStateFSM`)
+
+- **動作仕様**:
+  - **リセットスイッチ (`RESET_SW` / `io.clear`)** を押されたら初期状態 `State.s0` (`0001`) に戻り停止。
+  - **ランボタン (`RUN_SW` / `io.run`)** を押されたら動作を開始し、`s0 -> s1 -> s2 -> s3 -> s0` の4状態を巡回遷移し続ける。
+  - **状態出力**: 現在の状態を4ビットの**ワンホット（`0001`, `0010`, `0100`, `1000`）**として出力する。
+
+<p align="center">
+  <img src="figures/lecture07_four_state_fsm.svg" width="660">
+</p>
+
+<!-- Note:
+まず本日の演習の1つ目の課題（assignment1）として実装する「4状態を遷移し続けるFSM（FourStateFSM）」を見てみましょう。
+ChiselEnum で s0, s1, s2, s3 の4つの状態を定義します。
+リセットスイッチ（RESET_SW: io.clear）が押されたら初期状態 s0 に戻って待機し、ランボタン（RUN_SW: io.run）が押されたら動作を開始して s0 -> s1 -> s2 -> s3 -> s0 と4状態を遷移し続けます。
+そして出力 io.out には、各状態を4ビットのワンホット（0001, 0010, 0100, 1000）に変換して出力します。
+-->
+
+---
+
+## 8. 課題1 (`FourStateFSM`) の実装コード
+
+```scala
+class FourStateFSM(val clkFreq: Int = 9000000) extends Module {
+  val io = IO(new Bundle {
+    val run    = Input(Bool())     // ランボタン (RUN_SW: P16)
+    val clear  = Input(Bool())     // リセットスイッチ (RESET_SW: P120)
+    val runLED = Output(Bool())    // 動作インジケータ (RUN_LED: P43)
+    val out    = Output(UInt(4.W)) // ワンホット状態出力 (DATA_LED[3:0])
+  })
+  object State extends ChiselEnum { val s0, s1, s2, s3 = Value }
+  val stateReg   = RegInit(State.s0)
+  val runningReg = RegInit(false.B)
+  when(io.clear) { runningReg := false.B }.elsewhen(io.run) { runningReg := true.B }
+  // (中略: 1Hz分周ストローブ stepEn 生成)
+  when(io.clear) {
+    stateReg := State.s0
+  }.elsewhen(stepEn) {
+    switch(stateReg) {
+      is(State.s0) { stateReg := State.s1 }
+      is(State.s1) { stateReg := State.s2 }
+      is(State.s2) { stateReg := State.s3 }
+      is(State.s3) { stateReg := State.s0 }
+    }
+  }
+  val outW = WireDefault("b0001".U(4.W))
+  switch(stateReg) {
+    is(State.s0) { outW := "b0001".U }; is(State.s1) { outW := "b0010".U }
+    is(State.s2) { outW := "b0100".U }; is(State.s3) { outW := "b1000".U }
+  }
+  io.out := outW // (実機LED負論理時は ~outW)
+}
+```
+
+<!-- Note:
+課題1の実装コードの核心部分です。
+まず runningReg という1ビットレジスタを用意し、ランボタン（io.run）が一度でも押されたら true.B を保持し、リセットスイッチ（io.clear）が押されたら false.B に戻します。
+状態遷移部では、io.clear が押されたら初期状態 State.s0 に戻し、動作中（stepEn）であれば switch(stateReg) で s0 -> s1 -> s2 -> s3 -> s0 と順番に遷移させます。
+そして出力部では、stateReg の値のみから switch 文で 4ビットのワンホット値（"b0001".U 〜 "b1000".U）をデコードして出力します。第4回で学んだシフトレジスタによるRingカウンタと同じワンホット波形を、ChiselEnum を用いたMoore型FSMとして設計できることがわかります。
+-->
+
+---
+
+## 9. 課題2 (`assignment2`): "101" パターンシーケンス検出器
 
 入力ピン `in` からシリアルに流れてくるビット列を監視し、直近の3ビットが `"1-0-1"` と合致した瞬間に `detected` フラグを立てる。
 
@@ -219,7 +283,7 @@ detected : ───────────────────────
 
 ---
 
-## 8. "101" 検出器の状態遷移図 (State Transition Diagram)
+## 10. "101" 検出器の状態遷移図 (State Transition Diagram)
 
 4つの状態を定義します。
 
@@ -241,7 +305,7 @@ detected : ───────────────────────
 
 ---
 
-## 9. "101" シーケンス検出器の実装コード
+## 11. 課題2 (`SequenceDetector101`) の実装コード
 
 ```scala
 class SequenceDetector101 extends Module {
@@ -286,7 +350,7 @@ ChiselEnum で4つの状態を定義し、switch / is 文で状態遷移を記�
 
 ---
 
-## 10. 発展課題: 交通信号機コントローラ (Traffic Light Controller)
+## 12. 課題3 (`assignment3`): 交通信号機コントローラ (`TrafficLightController`)
 
 現実の組込み制御システムを模した実践的FSM。
 
@@ -303,14 +367,14 @@ ChiselEnum で4つの状態を定義し、switch / is 文で状態遷移を記�
 4. **歩行者横断**: 歩行者青を8サイクル維持した後、歩行者赤 $\to$ 車道青へ復帰。
 
 <!-- Note:
-発展課題の交通信号機コントローラです。
+課題3（発展課題）の交通信号機コントローラです。
 信号機の制御は、世界中の工学部でFSMの最高の実践例として教えられています。
 ボタンが押されたという非同期なイベントをラッチし、内部のタイマカウンタと連動しながら、絶対に「車道も歩行者も同時に青」にならない安全な状態遷移を設計します。
 -->
 
 ---
 
-## 11. 信号機FSMの状態遷移設計
+## 13. 信号機FSMの状態遷移設計
 
 4つの安全状態を定義し、タイマカウンタ (`timerReg`) と連動させる。
 
@@ -326,7 +390,7 @@ FSMの中に小さなカウンタを同居させ、状態が変わるたびに�
 
 ---
 
-## 12. 信号機コントローラの実装コード骨格
+## 14. 信号機コントローラの実装コード骨格
 
 ```scala
 class TrafficLightController extends Module {
@@ -374,7 +438,7 @@ class TrafficLightController extends Module {
 
 ---
 
-## 13. FSMのエンコーディング方式（バイナリ vs 1-hot）
+## 15. FSMのエンコーディング方式（バイナリ vs 1-hot）
 
 ハードウェア合成時、FSMの各状態はどのようなビット列にエンコードされるか？
 
@@ -395,7 +459,7 @@ FPGAにはFFが大量にあるため、デコード論理が軽くなって周�
 
 ---
 
-## 14. FSMデバッグの勘所: ハングアップ防止
+## 16. FSMデバッグの勘所: ハングアップ防止
 
 FSM設計で最も警戒すべきバグは**「状態遷移のデッドロック（行き止まり）」**です。
 
@@ -415,33 +479,29 @@ FSMデバッグの心得です。
 
 ---
 
-## 15. 本日の演習課題 (90分)
+## 17. 本日の演習課題 (90分)
 
-演習は**基本問題**と**発展問題**の2段階構成です。
+演習は `Lab07` 配下の3つの課題（`assignment1`〜`assignment3`）で構成されます。
 
-### 基本問題（必須 / 目安45〜50分）
-- **`SequenceDetector101`**:
-  - `ChiselEnum` を用いた4状態の定義
-  - 重複パターン（"10101" 等）を正確に認識するMoore型遷移
-  - グリッチのない `detected` パルス出力の検証
+### 1. 基本問題1 (`assignment1` / 必須): 4状態巡回FSM (`FourStateFSM`)
+- `ChiselEnum` で4状態 (`s0, s1, s2, s3`) を定義し、状態を**ワンホット (`0001`, `0010`, `0100`, `1000`)** として出力。
+- **リセットスイッチ (`RESET_SW` `P120` / `clear`)** 押下で初期状態 `s0` に戻り、**ランボタン (`RUN_SW` `P16` / `run`)** 押下で動作開始して4状態を巡回し続ける。
 
-### 確認課題
-- **`TrafficLightController`**:
-  - 歩行者割り込みボタンのラッチとタイマ連動遷移
-  - 4つの信号状態（車道青 $\to$ 黄 $\to$ 赤/歩青 $\to$ 赤/歩黄 $\to$ 車青）の完全巡回
+### 2. 基本問題2 (`assignment2` / 必須): Moore型 "101" パターン検出器 (`SequenceDetector101`)
+- `ChiselEnum` を用いた4状態の定義と、重複パターン（`"10101"` 等）を正確に認識するMoore型遷移の実装。
 
-### バッファ (5〜10分)
-- コード整形、テスト実行、波形確認
+### 3. 発展問題 (`assignment3` / 推奨): 交通信号機コントローラ (`TrafficLightController`)
+- 歩行者割り込みボタンのラッチとタイマ連動による4状態（車道青 $\to$ 黄 $\to$ 赤/歩青 $\to$ 赤/歩黄 $\to$ 車青）の安全遷移。
 
 <!-- Note:
 演習の案内です。
-まずは基本問題の101検出器を完成させてください。シミュレーション波形で、10101が入ったときにパルスが2回ちゃんと出るかを確認します。
-続いて発展問題の信号機コントローラに挑み、タイマと割り込みが連動した本格的なステートマシンを完成させましょう。
+まずは課題1（assignment1: FourStateFSM）で、リセットスイッチで初期状態に戻り、ランボタンで4状態をワンホット出力しながら遷移し続けるFSMを完成させてください。
+続いて課題2（assignment2: SequenceDetector101）の101パターン検出器、そして課題3（assignment3: TrafficLightController）の信号機コントローラに取り組んでください。
 -->
 
 ---
 
-## 16. 第7回 まとめ & 次回予告
+## 18. 第7回 まとめ & 次回予告
 
 ### 本日の重要ポイント
 1. FSMは「状態レジスタ」「次状態論理」「出力論理」の3要素からなる制御の中核。

@@ -1,7 +1,7 @@
 import chisel3._
 import chisel3.util._
 
-// 基本問題: Moore型 "101" パターン検出器
+// 課題2: Moore型 "101" パターン検出器
 class SequenceDetector101 extends Module {
   val io = IO(new Bundle {
     val in       = Input(Bool())
