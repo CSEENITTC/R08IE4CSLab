@@ -2,12 +2,11 @@ import chisel3._
 import chisel3.util._
 
 // 課題1: 4状態を遷移し続けるMoore型FSM (ワンホット出力)
-class FourStateFSM(val clkFreq: Int = 9000000) extends Module {
+class FourStateFSM extends Module {
   val io = IO(new Bundle {
-    val run    = Input(Bool())      // ランボタン (RUN_SW: P16) 押下で動作開始
-    val clear  = Input(Bool())      // リセットスイッチ (RESET_SW: P120) 押下で初期状態へ復帰
-    val runLED = Output(Bool())     // 動作状態インジケータ (RUN_LED: P43)
-    val out    = Output(UInt(4.W))  // ワンホット状態出力 (DATA_LED[3:0]: P62, P61, P59, P58)
+    val en    = Input(Bool())     // イネーブル信号 (OneHzGeneratorからの1秒パルス)
+    val clear = Input(Bool())     // 同期クリア (リセットスイッチ押下で初期状態 s0 へ復帰)
+    val out   = Output(UInt(4.W)) // ワンホット状態出力 ("b0001", "b0010", "b0100", "b1000")
   })
 
   object State extends ChiselEnum {
@@ -15,17 +14,16 @@ class FourStateFSM(val clkFreq: Int = 9000000) extends Module {
   }
 
   // TODO:
-  // 1. リセットスイッチ (io.clear) 押下で初期状態 State.s0 ("b0001") に戻り停止
-  // 2. ランボタン (io.run) 押下で動作開始し、s0 -> s1 -> s2 -> s3 -> s0 の4状態を巡回遷移
-  // 3. 状態をワンホット ("b0001", "b0010", "b0100", "b1000") として io.out に出力
-  io.out    := "b0001".U(4.W)
-  io.runLED := true.B
+  // 1. 状態レジスタ stateReg を初期値 State.s0 で生成
+  // 2. io.clear のとき State.s0 へ初期化、io.en のとき s0 -> s1 -> s2 -> s3 -> s0 と巡回遷移
+  // 3. Moore型出力として各状態をワンホット ("b0001", "b0010", "b0100", "b1000") で io.out に出力
+  io.out := "b0001".U(4.W)
 }
 
-object VerilogGenerator extends App {
-  _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
-    new FourStateFSM,
-    Array("--target-dir", "generated"),
-    Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
-  )
-}
+// object VerilogGenerator extends App {
+//   _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
+//     new FourStateFSM,
+//     Array("--target-dir", "generated"),
+//     Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
+//   )
+// }

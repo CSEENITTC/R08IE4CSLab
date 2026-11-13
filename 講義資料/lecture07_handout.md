@@ -66,18 +66,40 @@ val stateReg = RegInit(State.s0) // 初期状態 s0 で同期リセット
 
 ## 3. 本日の演習課題仕様 (`assignment1`〜`assignment3`)
 
-### 1. `assignment1`: 4状態を遷移し続けるFSM (`FourStateFSM`)
-- **状態定義**: `ChiselEnum` による 4状態 (`s0`, `s1`, `s2`, `s3`)
-- **入力**: `run` (Bool: `RUN_SW` `P16`), `clear` (Bool: `RESET_SW` `P120`)
-- **出力**: `out` (UInt(4.W): `DATA_LED[3:0]`), `runLED` (Bool: `RUN_LED` `P43`)
-- **論理仕様**:
-  - **リセットスイッチ (`clear`)** が押されたら初期状態 `State.s0` に戻り停止。
-  - **ランボタン (`run`)** が押されたら動作を開始し（`runningReg := true.B` で保持）、`s0 -> s1 -> s2 -> s3 -> s0` の4状態を巡回遷移し続ける。
-  - 状態は4ビットの**ワンホット（`s0`: `"b0001".U`, `s1`: `"b0010".U`, `s2`: `"b0100".U`, `s3`: `"b1000".U`）**として出力する。
+### 1. `assignment1`: 4状態を遷移し続けるFSM (`FourStateFSM.scala` & `TeCIO.scala`)
+- **モジュール構成**:
+  - **`FourStateFSM`**: `ChiselEnum` による 4状態 (`s0`, `s1`, `s2`, `s3`) を持ち、`clear` で初期状態 `s0`、`en` で `s0 -> s1 -> s2 -> s3 -> s0` と遷移し続け、状態を4ビットの**ワンホット（`"b0001".U`, `"b0010".U`, `"b0100".U`, `"b1000".U`）**として `io.out` に出力する。
+  - **`TeCIO`**: `OneHzGenerator(clkFreq)` と `FourStateFSM` を呼び出し、**`OneHzGenerator` が生成する1秒パルス (`oneHzPulse`) をイネーブル信号 (`fsm.io.en`) として `FourStateFSM` を動作**させる。
+- **TeCボード配線 (`TeCIO.ucf`)**:
+  - `io_en`: `RUN_SW` (`P16` | `PULLUP`) — ランボタンで動作開始
+  - `io_clear`: `RESET_SW` (`P120` | `PULLUP`) — リセットスイッチで初期状態 `s0` へ復帰
+  - `io_runLED`: `RUN_LED` (`P43`) — 0.5秒ごとに点滅 (`~oneHz.io.ledBlink`)
+  - `io_out[3:0]`: `DATA_LED[3:0]` (`P62, P61, P59, P58`) — ワンホット状態出力 (`~fsm.io.out`)
 
 <p align="center">
-  <img src="figures/lecture07_four_state_fsm.svg" width="560">
+  <img src="figures/lecture07_four_state_fsm.svg" width="580">
 </p>
+
+```scala
+class TeCIO(val clkFreq: Int = 9000000) extends Module {
+  val io = IO(new Bundle {
+    val en     = Input(Bool())     // RUN_SW (P16)
+    val clear  = Input(Bool())     // RESET_SW (P120)
+    val runLED = Output(Bool())    // RUN_LED (P43)
+    val out    = Output(UInt(4.W)) // DATA_LED[3:0] (P62, P61, P59, P58)
+  })
+  val oneHz = Module(new OneHzGenerator(clkFreq))
+  val fsm   = Module(new FourStateFSM)
+
+  oneHz.io.en    := io.en
+  oneHz.io.clear := io.clear
+  fsm.io.en      := oneHz.io.oneHzPulse // 1秒パルスをFSMのイネーブル信号に入力
+  fsm.io.clear   := io.clear
+
+  io.runLED := ~oneHz.io.ledBlink
+  io.out    := ~fsm.io.out
+}
+```
 
 ### 2. `assignment2`: Moore型 "101" パターン検出器 (`SequenceDetector101`)
 - **状態定義**: `ChiselEnum` による 4状態 (`sIDLE`, `s1`, `s10`, `s101`)
@@ -109,8 +131,8 @@ io.detected := (stateReg === State.s101)
 
 演習コードは `Lab07/` 配下の各課題ディレクトリ（`assignment1`〜`assignment3`）に配置されています。
 
-1. **基本問題1 (`assignment1`: `FourStateFSM`)**:
-   - リセットスイッチ (`clear`) による初期状態 `s0` 復帰、ランボタン (`run`) 押下による動作開始ラッチ、および4状態のワンホット出力 (`0001` $\to$ `0010` $\to$ `0100` $\to$ `1000`) を実装し、`sbt test` で確認する（`FourStateFSM.ucf` を用いた実機確認にも対応）。
+1. **基本問題1 (`assignment1`: `FourStateFSM` & `TeCIO`)**:
+   - `FourStateFSM.scala` を実装して `sbt test` で単体検証したのち、`TeCIO.scala` で `OneHzGenerator` と `FourStateFSM` を接続し、`sbt run` で生成した回路を `TeCIO.ucf` を用いてFPGAボード（TeCボード）上で動作確認する。
 2. **基本問題2 (`assignment2`: `SequenceDetector101`)**:
    - `ChiselEnum` 状態定義と重複系列（`"10101"`）に対応したMoore型FSMを実装し、`sbt test` で検証する。
 3. **発展問題 (`assignment3`: `TrafficLightController`)**:

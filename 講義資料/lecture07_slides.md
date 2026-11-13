@@ -195,49 +195,42 @@ switch文の中で各状態における行き先を明確にし、出力は状�
 
 ---
 
-## 7. 課題1 (`assignment1`): 4状態を遷移し続けるFSM (`FourStateFSM`)
+## 7. 課題1 (`assignment1`): 4状態を遷移し続けるFSM (`FourStateFSM` + `TeCIO`)
 
-- **動作仕様**:
-  - **リセットスイッチ (`RESET_SW` / `io.clear`)** を押されたら初期状態 `State.s0` (`0001`) に戻り停止。
-  - **ランボタン (`RUN_SW` / `io.run`)** を押されたら動作を開始し、`s0 -> s1 -> s2 -> s3 -> s0` の4状態を巡回遷移し続ける。
-  - **状態出力**: 現在の状態を4ビットの**ワンホット（`0001`, `0010`, `0100`, `1000`）**として出力する。
+- **モジュール構成 (`TeCIO.scala` + `FourStateFSM.scala`)**:
+  - トップモジュール **`TeCIO`** から **`OneHzGenerator`（1秒パルス生成）** と **`FourStateFSM`（4状態FSM）** を呼び出す。
+  - `OneHzGenerator` が生成する1秒パルス (`oneHzPulse`) をイネーブル信号 (`fsm.io.en`) としてFSMに入力し、1秒ごとに `s0 -> s1 -> s2 -> s3 -> s0` と遷移し続けさせる。
+  - **リセットスイッチ (`RESET_SW` / `io.clear`)** で初期状態 `s0` (`0001`)、**ランボタン (`RUN_SW` / `io.en`)** で動作開始、状態は4ビットの**ワンホット**として出力する。
 
 <p align="center">
-  <img src="figures/lecture07_four_state_fsm.svg" width="660">
+  <img src="figures/lecture07_four_state_fsm.svg" width="640">
 </p>
 
 <!-- Note:
-まず本日の演習の1つ目の課題（assignment1）として実装する「4状態を遷移し続けるFSM（FourStateFSM）」を見てみましょう。
-ChiselEnum で s0, s1, s2, s3 の4つの状態を定義します。
-リセットスイッチ（RESET_SW: io.clear）が押されたら初期状態 s0 に戻って待機し、ランボタン（RUN_SW: io.run）が押されたら動作を開始して s0 -> s1 -> s2 -> s3 -> s0 と4状態を遷移し続けます。
-そして出力 io.out には、各状態を4ビットのワンホット（0001, 0010, 0100, 1000）に変換して出力します。
+まず本日の演習の1つ目の課題（assignment1）として実装する「4状態を遷移し続けるFSM」の全体構成を見てみましょう。
+トップモジュールの TeCIO.scala から、第3回・第5回でも登場した OneHzGenerator（1Hzパルス生成モジュール）と、4状態FSMである FourStateFSM モジュールを呼び出します。
+そして OneHzGenerator が生成する1秒に1クロック幅のパルス（oneHzPulse）を FourStateFSM のイネーブル信号（fsm.io.en）に接続することで、ランボタン（RUN_SW）が有効な間、1秒ごとに s0 -> s1 -> s2 -> s3 -> s0 と4状態を遷移し続け、ワンホット出力（0001, 0010, 0100, 1000）を DATA_LED[3:0] に表示します。またリセットスイッチ（RESET_SW: io.clear）を押すと初期状態 s0 に戻ります。
 -->
 
 ---
 
-## 8. 課題1 (`FourStateFSM`) の実装コード
+## 8. 課題1 (`FourStateFSM.scala` & `TeCIO.scala`) の実装コード
 
 ```scala
-class FourStateFSM(val clkFreq: Int = 9000000) extends Module {
+class FourStateFSM extends Module {
   val io = IO(new Bundle {
-    val run    = Input(Bool())     // ランボタン (RUN_SW: P16)
-    val clear  = Input(Bool())     // リセットスイッチ (RESET_SW: P120)
-    val runLED = Output(Bool())    // 動作インジケータ (RUN_LED: P43)
-    val out    = Output(UInt(4.W)) // ワンホット状態出力 (DATA_LED[3:0])
+    val en    = Input(Bool())     // OneHzGenerator からの1秒パルス
+    val clear = Input(Bool())     // リセットスイッチ押下で初期状態 s0 へ復帰
+    val out   = Output(UInt(4.W)) // ワンホット状態出力 ("b0001"〜"b1000")
   })
   object State extends ChiselEnum { val s0, s1, s2, s3 = Value }
-  val stateReg   = RegInit(State.s0)
-  val runningReg = RegInit(false.B)
-  when(io.clear) { runningReg := false.B }.elsewhen(io.run) { runningReg := true.B }
-  // (中略: 1Hz分周ストローブ stepEn 生成)
+  val stateReg = RegInit(State.s0)
   when(io.clear) {
     stateReg := State.s0
-  }.elsewhen(stepEn) {
+  }.elsewhen(io.en) {
     switch(stateReg) {
-      is(State.s0) { stateReg := State.s1 }
-      is(State.s1) { stateReg := State.s2 }
-      is(State.s2) { stateReg := State.s3 }
-      is(State.s3) { stateReg := State.s0 }
+      is(State.s0) { stateReg := State.s1 }; is(State.s1) { stateReg := State.s2 }
+      is(State.s2) { stateReg := State.s3 }; is(State.s3) { stateReg := State.s0 }
     }
   }
   val outW = WireDefault("b0001".U(4.W))
@@ -245,15 +238,18 @@ class FourStateFSM(val clkFreq: Int = 9000000) extends Module {
     is(State.s0) { outW := "b0001".U }; is(State.s1) { outW := "b0010".U }
     is(State.s2) { outW := "b0100".U }; is(State.s3) { outW := "b1000".U }
   }
-  io.out := outW // (実機LED負論理時は ~outW)
+  io.out := outW
 }
+// TeCIO.scala 内での呼び出し:
+// val oneHz = Module(new OneHzGenerator(clkFreq)); val fsm = Module(new FourStateFSM)
+// fsm.io.en := oneHz.io.oneHzPulse; fsm.io.clear := io.clear; io.out := ~fsm.io.out
 ```
 
 <!-- Note:
-課題1の実装コードの核心部分です。
-まず runningReg という1ビットレジスタを用意し、ランボタン（io.run）が一度でも押されたら true.B を保持し、リセットスイッチ（io.clear）が押されたら false.B に戻します。
-状態遷移部では、io.clear が押されたら初期状態 State.s0 に戻し、動作中（stepEn）であれば switch(stateReg) で s0 -> s1 -> s2 -> s3 -> s0 と順番に遷移させます。
-そして出力部では、stateReg の値のみから switch 文で 4ビットのワンホット値（"b0001".U 〜 "b1000".U）をデコードして出力します。第4回で学んだシフトレジスタによるRingカウンタと同じワンホット波形を、ChiselEnum を用いたMoore型FSMとして設計できることがわかります。
+課題1の FourStateFSM.scala と TeCIO.scala の実装コードです。
+分周処理を OneHzGenerator に分離したことで、FourStateFSM 自体は非常にシンプルで純粋なMoore型FSMになっています。
+io.clear が押されたら初期状態 State.s0 に戻り、io.en（1秒パルス）が true.B のクロックで switch(stateReg) により s0 -> s1 -> s2 -> s3 -> s0 と遷移します。
+そして TeCIO.scala では、OneHzGenerator と FourStateFSM をインスタンス化し、`fsm.io.en := oneHz.io.oneHzPulse` として1秒パルスをFSMのイネーブル信号に繋ぎ、出力を負論理反転（`~fsm.io.out`）して DATA_LED へ出力します。
 -->
 
 ---
@@ -483,9 +479,9 @@ FSMデバッグの心得です。
 
 演習は `Lab07` 配下の3つの課題（`assignment1`〜`assignment3`）で構成されます。
 
-### 1. 基本問題1 (`assignment1` / 必須): 4状態巡回FSM (`FourStateFSM`)
-- `ChiselEnum` で4状態 (`s0, s1, s2, s3`) を定義し、状態を**ワンホット (`0001`, `0010`, `0100`, `1000`)** として出力。
-- **リセットスイッチ (`RESET_SW` `P120` / `clear`)** 押下で初期状態 `s0` に戻り、**ランボタン (`RUN_SW` `P16` / `run`)** 押下で動作開始して4状態を巡回し続ける。
+### 1. 基本問題1 (`assignment1` / 必須): 4状態巡回FSM (`FourStateFSM` + `TeCIO`)
+- `FourStateFSM.scala`: `ChiselEnum` で4状態 (`s0, s1, s2, s3`) を定義し、状態を**ワンホット (`0001`, `0010`, `0100`, `1000`)** として出力（`clear` で初期状態 `s0`、`en` で次状態へ遷移）。
+- `TeCIO.scala`: `OneHzGenerator` と `FourStateFSM` を呼び出し、**`OneHzGenerator` が生成する1秒パルス (`oneHzPulse`) をイネーブル信号 (`fsm.io.en`) としてFSMを動作**させる（`RUN_SW` `P16` で動作、`RESET_SW` `P120` で初期状態へ復帰）。
 
 ### 2. 基本問題2 (`assignment2` / 必須): Moore型 "101" パターン検出器 (`SequenceDetector101`)
 - `ChiselEnum` を用いた4状態の定義と、重複パターン（`"10101"` 等）を正確に認識するMoore型遷移の実装。
