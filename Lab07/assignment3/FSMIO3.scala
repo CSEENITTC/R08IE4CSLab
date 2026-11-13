@@ -1,7 +1,7 @@
 import chisel3._
 
 // トップモジュール: OneHzGenerator と TrafficLightController を呼び出し、1秒パルスをイネーブルとしてFSMを動作させる
-class FSMIO(val clkFreq: Int = 9000000) extends Module {
+class FSMIO3(val clkFreq: Int = 9000000) extends Module {
   val io = IO(new Bundle {
     val en               = Input(Bool())     // ランボタン (RUN_SW: P16)
     val clear            = Input(Bool())     // リセットスイッチ (RESET_SW: P120)
@@ -22,7 +22,7 @@ class FSMIO(val clkFreq: Int = 9000000) extends Module {
 
 object VerilogGenerator extends App {
   _root_.circt.stage.ChiselStage.emitSystemVerilogFile(
-    new FSMIO,
+    new FSMIO3,
     Array("--target-dir", "generated"),
     Array("--lowering-options=noAlwaysComb,disallowPackedArrays,disallowLocalVariables")
   )

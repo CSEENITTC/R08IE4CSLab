@@ -81,36 +81,63 @@ FPGAの大容量BRAMは同期読み出ししかできませんが、CPUのレジ
 
 ---
 
-## 3. Chiselにおける `Mem`: 非同期読み出しメモリ
+## 3. Chiselにおける `Mem`（256バイト宣言）と初期値のロード
 
-Chiselで非同期読み出しメモリを生成するには、`Mem` プリミティブを使用します。
+Chiselで256バイト（256ワード × 8ビット）の非同期読み出しメモリを生成し、外部16進ファイル（`mem_init.hex`）から初期値を持たせるには、`Mem(256, UInt(8.W))` と `loadMemoryFromFileInline` を使用します。
 
 ```scala
-// 8ワード、各ワード8ビット幅のメモリ配列を生成
-val mem = Mem(8, UInt(8.W))
+import chisel3._
+import chisel3.util.experimental.loadMemoryFromFileInline
 
-// 1. 同期書き込み (クロック立ち上がりで書き込み)
-when(io.wen) {
-  mem(io.waddr) := io.wdata
-}
+// 1. 256バイト (256ワード × 8ビット) の非同期読み出しメモリを宣言
+val mem = Mem(256, UInt(8.W))
 
-// 2. 非同期読み出し (アドレス指定で即座にデータが出力)
-io.rdata := mem(io.raddr)
+// 2. 外部16進ファイル ("mem_init.hex") から256バイトの初期値をロード
+loadMemoryFromFileInline(mem, "mem_init.hex")
+
+// 3. 同期書き込み (クロック立ち上がりで8ビットアドレス io.addr に書き込み)
+when(io.wen) { mem(io.addr) := io.wdata }
+
+// 4. 非同期読み出し (アドレス指定で即座にデータが出力)
+io.rdata := mem(io.addr)
 ```
 
-- **書き込み**: 常にクロックに同期（`when(wen)` で指定）。
-- **読み出し**: 純粋な組合せ論理として動作（クロック遅延なし）。
+- **初期値ファイル (`mem_init.hex`)**: 1行に1バイト（2桁の16進数 `00`〜`FF`）を256行記述。合成ツール（FPGAの分散RAM等）およびシミュレータの双方で初期値として自動的に読み込まれる。
 
 <!-- Note:
-Chiselでの Mem の書き方です。
-非常に直感的です。
-mem(io.waddr) := io.wdata を when(io.wen) の中に書くことで、書き込みイネーブル付きの同期書き込みになります。
-そして io.rdata := mem(io.raddr) と書くだけで、クロックを待たずに即座にデータが読み出される非同期ポートが生成されます。
+Chiselでの256バイトメモリの宣言と、初期値を持たせる方法です。
+`val mem = Mem(256, UInt(8.W))` と書くことで、8ビットアドレス（0〜255番地）でアクセスできる256バイトの非同期読み出しメモリが生成されます。
+さらに `chisel3.util.experimental.loadMemoryFromFileInline(mem, "mem_init.hex")` を呼び出すことで、SystemVerilog の `$readmemh("mem_init.hex", mem)` がインライン生成され、シミュレーション開始時およびFPGA合成時の初期値を外部ファイルから一括設定できます。
 -->
 
 ---
 
-## 4. マルチポート・レジスタファイル (Register File)
+## 4. 課題1 (`assignment1`): 初期値付き256バイトメモリとTeCボード連携 (`Memory256` + `MemoryIO1`)
+
+- **`Memory256.scala`**: `Mem(256, UInt(8.W))` と `loadMemoryFromFileInline(mem, "mem_init.hex")` により初期値を持つ256バイトメモリ。
+- **`MemoryIO1.scala` (`class MemoryIO`)**: TeCボードのスイッチとLEDで256バイトメモリを読み書きするトップモジュール。
+  - **アドレス操作**: `SETA_SW` (`P21`) で `DATA_SW[7:0]` の値をアドレスレジスタ `addrReg` に直接セット、`INCA_SW` (`P22`) / `DECA_SW` (`P23`) の立ち上がりエッジでアドレスを `+1` / `-1`、`RESET_SW` (`P120`) で `0` にリセット。
+  - **データ書き込み**: `WRITE_SW` (`P24`) を押すと `DATA_SW[7:0]` の値を現在のアドレスへ同期書き込み。
+  - **LED表示**: 現在のアドレスを `ADDR_LED[7:0]` (`P94..P83`) に、非同期読み出しデータを `DATA_LED[7:0]` (`P81..P58`) に負論理反転して即時表示。
+
+```scala
+val mem256 = Module(new Memory256("mem_init.hex"))
+mem256.io.addr  := addrReg
+mem256.io.wen   := io.writeEn
+mem256.io.wdata := io.dataSw
+io.addrLed := ~addrReg
+io.dataLed := ~mem256.io.rdata
+```
+
+<!-- Note:
+本日の課題1（assignment1）の全体構成です。
+256バイトのメモリ Memory256 を、トップモジュール MemoryIO1.scala から呼び出します。
+TeCボードの DATA_SW[7:0] と SETA_SW / INCA_SW / DECA_SW を使って8ビットアドレス（0x00〜0xFF）を自在に移動すると、mem_init.hex で初期化したデータが ADDR_LED と DATA_LED に即座に表示されます。さらに WRITE_SW を押せば、任意の番地に新しいデータを書き込むことができます。
+-->
+
+---
+
+## 5. マルチポート・レジスタファイル (Register File)
 
 現代のプロセッサ（RISC-V等）では、1命令で2つのレジスタから値を読み出し、1つのレジスタへ書き戻すため、**「2読み出しポート・1書き込みポート (2R1W)」**の構成が標準です。
 
@@ -127,7 +154,7 @@ Chiselではこれを驚くほどシンプルにモデル化できます。
 
 ---
 
-## 5. 2R1W レジスタファイルの実装コード
+## 6. 課題2 (`assignment2`): 2R1W レジスタファイルの実装コード
 
 ```scala
 class RegisterFile8x8 extends Module {
@@ -165,7 +192,7 @@ class RegisterFile8x8 extends Module {
 
 ---
 
-## 6. 【最重要工学的課題】Read-After-Write (RAW) 競合
+## 7. 【最重要工学的課題】Read-After-Write (RAW) 競合
 
 ### RAW競合とは
 「**同一クロックサイクル**において、**同一アドレス**に対して書き込みと読み出しが同時に発生した場合、読み出しポートには何が出力されるべきか？」
@@ -185,7 +212,7 @@ $$waddr == raddr1 \quad \text{かつ} \quad wen == 1$$
 
 ---
 
-## 7. RAWフォワーディング（バイパス）回路の原理
+## 8. RAWフォワーディング（バイパス）回路の原理
 
 メモリセルへの書き込みを待たずに、**書き込みデータを直接読み出しポートへショートカット（迂回）**させる。
 
@@ -204,7 +231,7 @@ $$waddr == raddr1 \quad \text{かつ} \quad wen == 1$$
 
 ---
 
-## 8. RAWバイパス回路付きレジスタファイルの実装
+## 9. 課題3 (`assignment3`): RAWバイパス回路付きレジスタファイルの実装
 
 ```scala
 class BypassedRegisterFile extends Module {
@@ -237,7 +264,7 @@ class BypassedRegisterFile extends Module {
 
 ---
 
-## 9. タイミング波形によるRAWフォワーディングの検証
+## 10. タイミング波形によるRAWフォワーディングの検証
 
 アドレス `2` に対して、書き込み (`0x42`) と読み出しが同一サイクルで衝突した場合：
 
@@ -264,7 +291,7 @@ rdata1   : ──X        0x42      X───────────── (�
 
 ---
 
-## 10. `SyncReadMem`（同期読み出し）との使い分け指針
+## 11. `SyncReadMem`（同期読み出し）との使い分け指針
 
 実務において `Mem` と `SyncReadMem` をどう選択すべきか？
 
@@ -284,7 +311,7 @@ rdata1   : ──X        0x42      X───────────── (�
 
 ---
 
-## 11. 全8回 講義シリーズの総括（マイルストーン達成）
+## 12. 全8回 講義シリーズの総括（マイルストーン達成）
 
 本講座を通じて皆さんが習得されたハードウェア設計能力：
 
@@ -304,7 +331,7 @@ rdata1   : ──X        0x42      X───────────── (�
 
 ---
 
-## 12. デジタルシステム設計者としての次のステップ
+## 13. デジタルシステム設計者としての次のステップ
 
 本講座を修了した皆さんの前に広がる、より高度なハードウェアの世界：
 
@@ -320,7 +347,7 @@ rdata1   : ──X        0x42      X───────────── (�
 
 ---
 
-## 13. 実機実装（FPGA / ASIC）への橋渡し
+## 14. 実機実装（FPGA / ASIC）への橋渡し
 
 Chiselで記述したコードがどのようにシリコンチップやFPGAになるのか：
 
@@ -336,7 +363,7 @@ Chiselで記述したコードがどのようにシリコンチップやFPGAに�
 
 ---
 
-## 14. 最終品質チェックリスト
+## 15. 最終品質チェックリスト
 
 <div class="box">
 <b>プロフェッショナル・デジタル設計者 チェックリスト</b><br>
@@ -354,24 +381,19 @@ Chiselで記述したコードがどのようにシリコンチップやFPGAに�
 
 ---
 
-## 15. 本日の演習課題 (90分)
+## 16. 本日の演習課題 (90分)
 
-演習は**基本問題**と**発展問題**の2段階構成です。
+演習は `Lab08` 配下の3つの課題（`assignment1`〜`assignment3`）で構成されます。
 
-### 基本問題（必須 / 目安45〜50分）
-- **`RegisterFile8x8`**:
-  - `Mem(8, UInt(8.W))` を用いたメモリ配列の宣言
-  - `wen` によるクロック同期書き込み
-  - `raddr1`, `raddr2` による2系統の独立した非同期読み出しポートの実装
+### 1. 基本問題1（`assignment1` / 必須）: 初期値付き 256バイト 非同期読み出しメモリ (`Memory256` + `MemoryIO1`)
+- **`Memory256.scala`**: `Mem(256, UInt(8.W))` で256バイトのメモリを宣言し、`loadMemoryFromFileInline(mem, "mem_init.hex")` で初期値をロード。クロック同期書き込みと非同期読み出しを実装。
+- **`MemoryIO1.scala` / `MemoryIO1.ucf`**: `SETA_SW` / `INCA_SW` / `DECA_SW` でアドレスを操作し、`ADDR_LED[7:0]` と `DATA_LED[7:0]` で初期値の読み出しおよび `WRITE_SW` による書き込みを実機確認。
 
-### 確認課題
-- **`BypassedRegisterFile`**:
-  - `RegisterFile8x8` のインスタンス化
-  - 同一サイクルRAW競合の検出器と比較器の実装
-  - MUXによる `wdata` の即座フォワーディング回路の検証
+### 2. 基本問題2（`assignment2` / 必須）: 2R1W レジスタファイル (`RegisterFile8x8`)
+- `Mem(8, UInt(8.W))` を用いたメモリ配列の宣言、`wen` によるクロック同期書き込み、`raddr1`, `raddr2` による2系統の独立した非同期読み出しポートの実装。
 
-### バッファ (5〜10分)
-- 全演習の完了確認、総括質疑応答
+### 3. 発展問題（`assignment3` / 推奨）: RAWバイパス付きレジスタファイル (`BypassedRegisterFile`)
+- `RegisterFile8x8` のインスタンス化、同一サイクルRAW競合の検出器とMUXによる `wdata` の即座フォワーディング回路の実装・検証。
 
 <!-- Note:
 最後の演習の案内です。
@@ -381,7 +403,7 @@ Chiselで記述したコードがどのようにシリコンチップやFPGAに�
 
 ---
 
-## 16. 全8回 完走おめでとうございます！
+## 17. 全8回 完走おめでとうございます！
 
 ### 講師からのメッセージ
 デジタル回路の論理設計は、数学的な美しさと物理的な制約が交錯する最高にエキサイティングな工学分野です。

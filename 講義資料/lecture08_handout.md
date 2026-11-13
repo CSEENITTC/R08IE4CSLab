@@ -48,7 +48,39 @@ style: |
 
 ---
 
-## 2. RAW (Read-After-Write) ハザードとバイパス回路
+## 2. 256バイトメモリの宣言と初期値のロード (`loadMemoryFromFileInline`)
+
+Chiselで256バイト（256ワード $\times$ 8ビット）の非同期読み出しメモリを宣言し、外部の16進ファイル（`mem_init.hex`）から初期値を持たせるには、`Mem(256, UInt(8.W))` と `loadMemoryFromFileInline` を組み合わせます。
+
+```scala
+import chisel3._
+import chisel3.util.experimental.loadMemoryFromFileInline
+
+class Memory256(val initHexFile: String = "mem_init.hex") extends Module {
+  val io = IO(new Bundle {
+    val addr  = Input(UInt(8.W))  // 8ビット アドレス (0〜255)
+    val wen   = Input(Bool())     // 書き込みイネーブル
+    val wdata = Input(UInt(8.W))  // 8ビット 書き込みデータ
+    val rdata = Output(UInt(8.W)) // 8ビット 非同期読み出しデータ
+  })
+
+  // 1. 256バイト (256ワード × 8ビット) の非同期読み出しメモリを宣言
+  val mem = Mem(256, UInt(8.W))
+
+  // 2. 外部16進ファイル ("mem_init.hex") から初期値をロード
+  if (initHexFile.trim().nonEmpty) {
+    loadMemoryFromFileInline(mem, initHexFile)
+  }
+
+  // 3. クロック同期書き込み & 4. 非同期読み出し
+  when(io.wen) { mem(io.addr) := io.wdata }
+  io.rdata := mem(io.addr)
+}
+```
+
+---
+
+## 3. RAW (Read-After-Write) ハザードとバイパス回路
 
 同一クロックサイクル内で、同一アドレスに対して「書き込み」と「読み出し」が同時に発生した場合：
 - 単純なメモリ配列では、書き込みデータが安定してセルに定着する前に読み出されるため、**未定義データや1クロック前の古いデータが読まれるリスク（RAW競合）**が発生します。
@@ -71,40 +103,22 @@ io.rdata1 := Mux(rawConflict1, io.wdata, mem(io.raddr1))
 
 ---
 
-## 3. レジスタファイルの入出力アーキテクチャ
+## 4. 本日の演習課題仕様 (`Lab08/assignment1`〜`assignment3`)
 
-```
-            +---------------------------------+
-            |       RegisterFile8x8 (2R1W)    |
-            |                                 |
-io.wen -----+---> [Write Logic]               |
-io.waddr ---+          |                      |
-io.wdata ---+          v                      |
-                 [ 8x8 Memory Array ]         |
-                       |         |            |
-io.raddr1 ------------+         |            |
-io.raddr2 ----------------------+            |
-                       v         v            |
-                  io.rdata1   io.rdata2       |
-            +---------------------------------+
-```
+### 1. 基本問題1 (`assignment1`): 初期値付き 256バイト 非同期読み出しメモリ (`Memory256` & `MemoryIO1`)
+- **モジュール構成**:
+  - `Memory256` (`Memory256.scala`): `Mem(256, UInt(8.W))` で256バイトを宣言し、`loadMemoryFromFileInline(mem, initHexFile)` で `mem_init.hex`（`00`〜`FF` の256行）の初期値をロードする。
+  - `MemoryIO` (`MemoryIO1.scala`, `MemoryIO1.ucf`): TeCボードのスイッチ（`DATA_SW[7:0]`, `SETA_SW` `P21`, `INCA_SW` `P22`, `DECA_SW` `P23`, `WRITE_SW` `P24`, `RESET_SW` `P120`）で8ビットアドレス `addrReg` の操作とメモリ書き込みを行い、`ADDR_LED[7:0]` (`P94..P83`) と `DATA_LED[7:0]` (`P81..P58`) に負論理反転して出力する。
 
-- 同一サイクルで `rdata1 = mem(raddr1)` と `rdata2 = mem(raddr2)` を独立に取得。
-- 書き込みは `wen === true.B` のときのみ、次のクロックエッジで `wdata` が `waddr` に格納される。
-
----
-
-## 4. 本日の演習課題仕様 (Assignment Specifications)
-
-### 基本問題: 2R1W 非同期読み出しレジスタファイル (`RegisterFile8x8`)
+### 2. 基本問題2 (`assignment2`): 2R1W 非同期読み出しレジスタファイル (`RegisterFile8x8`)
 - **構成**: 8ワード $\times$ 8ビット (`Mem(8, UInt(8.W))`)
 - **入力**: `raddr1` (UInt(3.W)), `raddr2` (UInt(3.W)), `wen` (Bool), `waddr` (UInt(3.W)), `wdata` (UInt(8.W))
 - **出力**: `rdata1` (UInt(8.W)), `rdata2` (UInt(8.W))
 - **論理仕様**:
-  - 同期書き込み: `when(wen) { mem(waddr) := wdata }`
+  - 同期書き込み: `when(io.wen) { mem(io.waddr) := io.wdata }`
   - 非同期読み出し: `io.rdata1 := mem(io.raddr1)`, `io.rdata2 := mem(io.raddr2)` (無遅延読み出し)
 
-### 発展問題: RAWバイパス回路付き レジスタファイル (`BypassedRegisterFile`)
+### 3. 発展問題 (`assignment3`): RAWバイパス回路付き レジスタファイル (`BypassedRegisterFile`)
 - **入力・出力**: `RegisterFile8x8` と同一
 - **論理仕様**:
   - `wen` が有効で、かつ `waddr === raddr1` の場合、`rdata1` にはメモリの値ではなく `wdata` を即座に出力。
@@ -114,18 +128,11 @@ io.raddr2 ----------------------+            |
 
 ## 5. 本日の演習課題ガイドライン (90分)
 
-演習コードは `Lab08/` 配下の各課題ディレクトリに分かれて配置されています。
+演習コードは `Lab08/` 配下の各課題ディレクトリ（`assignment1`〜`assignment3`）に配置されています。
 
-### 基本問題 (必須・目安45分 / 配点70点)
-- `Mem` を用いた 2R1W レジスタファイルの実装 (40点)。
-- クロック同期書き込みと同一サイクルの非同期読み出し動作の検証 (30点)。
-
-### 発展問題 (推奨・目安35分 / 配点30点)
-- 同一アドレス同時書き込み・読み出し時のRAW競合検出論理 (15点)。
-- バイパスマルチプレクサによる即時データフォワーディングの検証 (15点)。
-
-### 採点ポイント
-- `Mem` による非同期読み出しが正しく実現されているか (25点)
-- 書き込みが `wen` 有効時かつクロック同期で行われているか (25点)
-- 2つの読み出しポートが互いに干渉せず独立動作するか (20点)
-- RAWバイパス回路が同一サイクル競合時に新データを正しくフォワードするか (30点)
+1. **基本問題1 (`assignment1`: `Memory256.scala` + `MemoryIO1.scala` + `mem_init.hex`)**:
+   - `Memory256.scala` で `Mem(256, UInt(8.W))` と `loadMemoryFromFileInline` を実装して `sbt test` で検証したのち、`MemoryIO1.scala` を完成させて `sbt run` でSystemVerilogを生成し、`MemoryIO1.ucf` を用いてTeCボード実機で動作確認する。
+2. **基本問題2 (`assignment2`: `RegisterFile8x8.scala`)**:
+   - `Mem(8, UInt(8.W))` を用いた 2R1W レジスタファイルを実装し、`sbt test` で検証する。
+3. **発展問題 (`assignment3`: `BypassedRegisterFile.scala`)**:
+   - 同一アドレス同時書き込み・読み出し時のRAWバイパス回路を実装し、`sbt test` で検証する。
