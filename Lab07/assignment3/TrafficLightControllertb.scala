@@ -5,6 +5,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 class TrafficLightControllertb extends AnyFlatSpec with ChiselScalatestTester {
   it should "safely transition lights upon pedestrian request" in {
     test(new TrafficLightController).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.io.clear.poke(false.B)
+      dut.io.en.poke(true.B)
       dut.io.pedestrianButton.poke(false.B)
       dut.clock.step(1)
       dut.io.mainLight.expect(0.U) // 車道青

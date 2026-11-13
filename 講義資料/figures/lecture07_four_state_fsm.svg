@@ -31,7 +31,7 @@
 
   <!-- TeCIO Top Module Boundary -->
   <rect x="115" y="12" width="525" height="260" class="top-box"/>
-  <text x="275" y="32" class="title" style="fill:#1e40af;">TeCIO.scala (OneHzGenerator + FourStateFSM)</text>
+  <text x="315" y="32" class="title" style="fill:#1e40af;">TeCIO.scala: class FSMIO (OneHzGenerator.scala + FourStateFSM.scala)</text>
 
   <!-- Inputs: RUN_SW and RESET_SW -->
   <text x="14" y="65" class="sw-label">RUN_SW (P16)</text>

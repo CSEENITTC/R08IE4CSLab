@@ -195,10 +195,10 @@ switch文の中で各状態における行き先を明確にし、出力は状�
 
 ---
 
-## 7. 課題1 (`assignment1`): 4状態を遷移し続けるFSM (`FourStateFSM` + `TeCIO`)
+## 7. 課題1 (`assignment1`): 4状態を遷移し続けるFSM (`FourStateFSM` + `OneHzGenerator` + `TeCIO`)
 
-- **モジュール構成 (`TeCIO.scala` + `FourStateFSM.scala`)**:
-  - トップモジュール **`TeCIO`** から **`OneHzGenerator`（1秒パルス生成）** と **`FourStateFSM`（4状態FSM）** を呼び出す。
+- **3ファイル独立構成 (`OneHzGenerator.scala` + `FourStateFSM.scala` + `TeCIO.scala`)**:
+  - 独立ファイルの **`OneHzGenerator`（1秒パルス生成）** と **`FourStateFSM`（4状態FSM）** をトップモジュール **`FSMIO` (`TeCIO.scala`)** から呼び出す（`assignment2`, `assignment3` も同じ3ファイル構成）。
   - `OneHzGenerator` が生成する1秒パルス (`oneHzPulse`) をイネーブル信号 (`fsm.io.en`) としてFSMに入力し、1秒ごとに `s0 -> s1 -> s2 -> s3 -> s0` と遷移し続けさせる。
   - **リセットスイッチ (`RESET_SW` / `io.clear`)** で初期状態 `s0` (`0001`)、**ランボタン (`RUN_SW` / `io.en`)** で動作開始、状態は4ビットの**ワンホット**として出力する。
 
@@ -208,8 +208,8 @@ switch文の中で各状態における行き先を明確にし、出力は状�
 
 <!-- Note:
 まず本日の演習の1つ目の課題（assignment1）として実装する「4状態を遷移し続けるFSM」の全体構成を見てみましょう。
-トップモジュールの TeCIO.scala から、第3回・第5回でも登場した OneHzGenerator（1Hzパルス生成モジュール）と、4状態FSMである FourStateFSM モジュールを呼び出します。
-そして OneHzGenerator が生成する1秒に1クロック幅のパルス（oneHzPulse）を FourStateFSM のイネーブル信号（fsm.io.en）に接続することで、ランボタン（RUN_SW）が有効な間、1秒ごとに s0 -> s1 -> s2 -> s3 -> s0 と4状態を遷移し続け、ワンホット出力（0001, 0010, 0100, 1000）を DATA_LED[3:0] に表示します。またリセットスイッチ（RESET_SW: io.clear）を押すと初期状態 s0 に戻ります。
+Lab07のすべての課題（assignment1〜assignment3）では、OneHzGenerator.scala（1Hzパルス生成モジュール）を独立したファイルとして配置し、トップモジュールの TeCIO.scala（class FSMIO）から OneHzGenerator と各FSMモジュールを呼び出す構成になっています。
+OneHzGenerator が生成する1秒に1クロック幅のパルス（oneHzPulse）を FourStateFSM のイネーブル信号（fsm.io.en）に接続することで、ランボタン（RUN_SW）が有効な間、1秒ごとに s0 -> s1 -> s2 -> s3 -> s0 と4状態を遷移し続け、ワンホット出力（0001, 0010, 0100, 1000）を DATA_LED[3:0] に表示します。またリセットスイッチ（RESET_SW: io.clear）を押すと初期状態 s0 に戻ります。
 -->
 
 ---
@@ -240,16 +240,16 @@ class FourStateFSM extends Module {
   }
   io.out := outW
 }
-// TeCIO.scala 内での呼び出し:
+// TeCIO.scala (class FSMIO) 内での呼び出し:
 // val oneHz = Module(new OneHzGenerator(clkFreq)); val fsm = Module(new FourStateFSM)
 // fsm.io.en := oneHz.io.oneHzPulse; fsm.io.clear := io.clear; io.out := ~fsm.io.out
 ```
 
 <!-- Note:
 課題1の FourStateFSM.scala と TeCIO.scala の実装コードです。
-分周処理を OneHzGenerator に分離したことで、FourStateFSM 自体は非常にシンプルで純粋なMoore型FSMになっています。
+分周処理を独立ファイル OneHzGenerator.scala に分離したことで、FourStateFSM 自体は非常にシンプルで純粋なMoore型FSMになっています。
 io.clear が押されたら初期状態 State.s0 に戻り、io.en（1秒パルス）が true.B のクロックで switch(stateReg) により s0 -> s1 -> s2 -> s3 -> s0 と遷移します。
-そして TeCIO.scala では、OneHzGenerator と FourStateFSM をインスタンス化し、`fsm.io.en := oneHz.io.oneHzPulse` として1秒パルスをFSMのイネーブル信号に繋ぎ、出力を負論理反転（`~fsm.io.out`）して DATA_LED へ出力します。
+そして TeCIO.scala（class FSMIO）では、OneHzGenerator と FourStateFSM をインスタンス化し、`fsm.io.en := oneHz.io.oneHzPulse` として1秒パルスをFSMのイネーブル信号に繋ぎ、出力を負論理反転（`~fsm.io.out`）して DATA_LED へ出力します。
 -->
 
 ---
@@ -301,45 +301,38 @@ detected : ───────────────────────
 
 ---
 
-## 11. 課題2 (`SequenceDetector101`) の実装コード
+## 11. 課題2 (`SequenceDetector101.scala` & `TeCIO.scala`) の実装コード
 
 ```scala
 class SequenceDetector101 extends Module {
   val io = IO(new Bundle {
-    val in       = Input(Bool())
-    val detected = Output(Bool())
+    val en       = Input(Bool())  // OneHzGeneratorからの1秒パルス
+    val clear    = Input(Bool())  // リセットスイッチ押下で sIDLE へ復帰
+    val in       = Input(Bool())  // 1ビットシリアル入力 (DATA_SW[0]: P35)
+    val detected = Output(Bool()) // "101" 検出フラグ (Moore型出力)
   })
-
-  object State extends ChiselEnum {
-    val sIDLE, s1, s10, s101 = Value
-  }
-
+  object State extends ChiselEnum { val sIDLE, s1, s10, s101 = Value }
   val stateReg = RegInit(State.sIDLE)
 
-  switch(stateReg) {
-    is(State.sIDLE) {
-      when(io.in) { stateReg := State.s1 }
-    }
-    is(State.s1) {
-      when(!io.in) { stateReg := State.s10 }
-    }
-    is(State.s10) {
-      when(io.in) { stateReg := State.s101 }.otherwise { stateReg := State.sIDLE }
-    }
-    is(State.s101) {
-      when(io.in) { stateReg := State.s1 }.otherwise { stateReg := State.s10 }
+  when(io.clear) {
+    stateReg := State.sIDLE
+  }.elsewhen(io.en) {
+    switch(stateReg) {
+      is(State.sIDLE) { when(io.in)  { stateReg := State.s1 } }
+      is(State.s1)    { when(!io.in) { stateReg := State.s10 } }
+      is(State.s10)   { when(io.in)  { stateReg := State.s101 }.otherwise { stateReg := State.sIDLE } }
+      is(State.s101)  { when(io.in)  { stateReg := State.s1   }.otherwise { stateReg := State.s10 } }
     }
   }
-
-  // Moore型出力 (現在の状態のみから生成)
-  io.detected := stateReg === State.s101
+  io.detected := (stateReg === State.s101) // Moore型出力
 }
+// TeCIO.scala (class FSMIO) では独立ファイルの OneHzGenerator と SequenceDetector101 を呼び出す
 ```
 
 <!-- Note:
-完全な実装コードです。
-ChiselEnum で4つの状態を定義し、switch / is 文で状態遷移を記述しています。
-そして最後の行、`io.detected := stateReg === State.s101` に注目してください。
+課題2の完全な実装コードです。
+課題1と同様に、独立ファイルの OneHzGenerator.scala が生成する1秒パルス（io.en）と同期クリア（io.clear）を受け取り、switch / is 文で状態遷移を記述しています。
+そして最後の行、`io.detected := (stateReg === State.s101)` に注目してください。
 出力は状態レジスタ stateReg が s101 かどうかだけを見ています。入力 io.in は出力式に直接現れません。
 これが真のMoore型FSMであり、グリッチフリーな検出パルスを約束します。
 -->
@@ -348,24 +341,24 @@ ChiselEnum で4つの状態を定義し、switch / is 文で状態遷移を記�
 
 ## 12. 課題3 (`assignment3`): 交通信号機コントローラ (`TrafficLightController`)
 
-現実の組込み制御システムを模した実践的FSM。
+現実の組込み制御システムを模した実践的FSM（`OneHzGenerator.scala` の1秒パルスと連動）。
 
 ```
  [ 車道側信号: mainLight ] ──> Green (青) / Yellow (黄) / Red (赤)
  [ 歩行者信号: pedLight  ] ──> Red (赤)   / Green (青)
- [ 歩行者ボタン: pedBtn  ] ──> 割り込み要求入力
+ [ 歩行者ボタン: pedestrianButton ] ──> 割り込み要求入力 (STEP_SW: P15)
 ```
 
 ### システム要件
-1. **通常時**: 車道が青 (`Green`)、歩行者は赤 (`Red`) を維持。
-2. **歩行者ボタン押下**: リクエストを内部レジスタに記憶（ラッチ）。
-3. **安全確保タイマ**: 車道青が最低10サイクル継続した後に、車道黄 $\to$ 車道赤/歩行者青 へと遷移。
-4. **歩行者横断**: 歩行者青を8サイクル維持した後、歩行者赤 $\to$ 車道青へ復帰。
+1. **通常時 (`sVehGreen`)**: 車道が青 (`Green`)、歩行者は赤 (`Red`) を維持。
+2. **歩行者ボタン押下**: リクエストを内部レジスタ (`pedReqReg`) に記憶（ラッチ）。
+3. **安全確保タイマ**: 1秒パルス (`io.en`) で車道青が最低10ステップ継続した後に、車道黄 (`sVehYellow`) $\to$ 車道赤/歩行者青 (`sVehRedPedGreen`) へと遷移。
+4. **歩行者横断**: 歩行者青を8ステップ維持した後、歩行者赤 (`sVehRedPedYellow`) $\to$ 車道青 (`sVehGreen`) へ復帰。
 
 <!-- Note:
 課題3（発展課題）の交通信号機コントローラです。
 信号機の制御は、世界中の工学部でFSMの最高の実践例として教えられています。
-ボタンが押されたという非同期なイベントをラッチし、内部のタイマカウンタと連動しながら、絶対に「車道も歩行者も同時に青」にならない安全な状態遷移を設計します。
+ボタンが押されたというイベントをラッチし、独立ファイル OneHzGenerator の1秒パルス（io.en）に同期した内部タイマカウンタと連動しながら、絶対に「車道も歩行者も同時に青」にならない安全な状態遷移を設計します。
 -->
 
 ---
@@ -386,41 +379,37 @@ FSMの中に小さなカウンタを同居させ、状態が変わるたびに�
 
 ---
 
-## 14. 信号機コントローラの実装コード骨格
+## 14. 信号機コントローラ (`TrafficLightController.scala`) の実装コード骨格
 
 ```scala
 class TrafficLightController extends Module {
   val io = IO(new Bundle {
-    val pedestrianButton = Input(Bool())
+    val en               = Input(Bool())     // OneHzGeneratorからの1秒パルス
+    val clear            = Input(Bool())     // リセットスイッチ押下で初期状態へ復帰
+    val pedestrianButton = Input(Bool())     // 歩行者ボタン (STEP_SW: P15)
     val mainLight        = Output(UInt(2.W)) // 0: Green, 1: Yellow, 2: Red
     val pedLight         = Output(Bool())    // 0: Red, 1: Green
   })
-
   object LightState extends ChiselEnum {
     val sVehGreen, sVehYellow, sVehRedPedGreen, sVehRedPedYellow = Value
   }
-
   val stateReg  = RegInit(LightState.sVehGreen)
   val timerReg  = RegInit(0.U(4.W))
   val pedReqReg = RegInit(false.B)
 
-  // 1. ボタン押下要求のラッチ
-  when(io.pedestrianButton) { pedReqReg := true.B }
-  timerReg := timerReg + 1.U
-
-  // 2. タイマ連動の状態遷移論理
-  switch(stateReg) {
-    is(LightState.sVehGreen) {
-      when(pedReqReg && timerReg >= 10.U) {
-        stateReg := LightState.sVehYellow; timerReg := 0.U
+  when(io.clear) {
+    stateReg := LightState.sVehGreen; timerReg := 0.U; pedReqReg := false.B
+  }.otherwise {
+    when(io.pedestrianButton) { pedReqReg := true.B }
+    when(io.en) {
+      timerReg := timerReg + 1.U
+      switch(stateReg) {
+        is(LightState.sVehGreen) {
+          when(pedReqReg && timerReg >= 10.U) { stateReg := LightState.sVehYellow; timerReg := 0.U }
+        }
+        // ... sVehYellow -> sVehRedPedGreen -> sVehRedPedYellow -> sVehGreen ...
       }
     }
-    is(LightState.sVehYellow) {
-      when(timerReg >= 3.U) {
-        stateReg := LightState.sVehRedPedGreen; timerReg := 0.U; pedReqReg := false.B
-      }
-    }
-    // ... 後続遷移 ...
   }
 }
 ```
@@ -477,17 +466,17 @@ FSMデバッグの心得です。
 
 ## 17. 本日の演習課題 (90分)
 
-演習は `Lab07` 配下の3つの課題（`assignment1`〜`assignment3`）で構成されます。
+演習は `Lab07` 配下の3つの課題（`assignment1`〜`assignment3`）で構成されます。全課題とも独立ファイル **`OneHzGenerator.scala`** と各FSMモジュールを **`TeCIO.scala` (`class FSMIO`)** から呼び出す構成です。
 
-### 1. 基本問題1 (`assignment1` / 必須): 4状態巡回FSM (`FourStateFSM` + `TeCIO`)
+### 1. 基本問題1 (`assignment1` / 必須): 4状態巡回FSM (`FourStateFSM` + `OneHzGenerator` + `TeCIO`)
 - `FourStateFSM.scala`: `ChiselEnum` で4状態 (`s0, s1, s2, s3`) を定義し、状態を**ワンホット (`0001`, `0010`, `0100`, `1000`)** として出力（`clear` で初期状態 `s0`、`en` で次状態へ遷移）。
-- `TeCIO.scala`: `OneHzGenerator` と `FourStateFSM` を呼び出し、**`OneHzGenerator` が生成する1秒パルス (`oneHzPulse`) をイネーブル信号 (`fsm.io.en`) としてFSMを動作**させる（`RUN_SW` `P16` で動作、`RESET_SW` `P120` で初期状態へ復帰）。
+- `TeCIO.scala` (`class FSMIO`): 独立ファイルの `OneHzGenerator` と `FourStateFSM` を呼び出し、**`OneHzGenerator` が生成する1秒パルス (`oneHzPulse`) をイネーブル信号 (`fsm.io.en`) としてFSMを動作**させる。
 
-### 2. 基本問題2 (`assignment2` / 必須): Moore型 "101" パターン検出器 (`SequenceDetector101`)
-- `ChiselEnum` を用いた4状態の定義と、重複パターン（`"10101"` 等）を正確に認識するMoore型遷移の実装。
+### 2. 基本問題2 (`assignment2` / 必須): Moore型 "101" パターン検出器 (`SequenceDetector101` + `OneHzGenerator` + `TeCIO`)
+- `SequenceDetector101.scala`: 1秒パルス (`en`) ごとに `in` をサンプリングし、重複パターン（`"10101"` 等）を検出するMoore型FSMを実装。`TeCIO.scala` (`class FSMIO`) から `OneHzGenerator` とともに呼び出す。
 
-### 3. 発展問題 (`assignment3` / 推奨): 交通信号機コントローラ (`TrafficLightController`)
-- 歩行者割り込みボタンのラッチとタイマ連動による4状態（車道青 $\to$ 黄 $\to$ 赤/歩青 $\to$ 赤/歩黄 $\to$ 車青）の安全遷移。
+### 3. 発展問題 (`assignment3` / 推奨): 交通信号機コントローラ (`TrafficLightController` + `OneHzGenerator` + `TeCIO`)
+- `TrafficLightController.scala`: 1秒パルス (`en`) に同期したタイマ (`timerReg`) と歩行者ボタン (`pedBtn`) による信号機FSMを実装。`TeCIO.scala` (`class FSMIO`) から `OneHzGenerator` とともに呼び出す。
 
 <!-- Note:
 演習の案内です。

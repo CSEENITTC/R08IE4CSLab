@@ -5,6 +5,9 @@ import org.scalatest.flatspec.AnyFlatSpec
 class SequenceDetector101tb extends AnyFlatSpec with ChiselScalatestTester {
   it should "detect overlapping 101 sequences with Moore outputs" in {
     test(new SequenceDetector101).withAnnotations(Seq(WriteVcdAnnotation)) { dut =>
+      dut.io.clear.poke(false.B)
+      dut.io.en.poke(true.B)
+
       // 入力系列: 1 -> 0 -> 1 -> 0 -> 1
       val inputs   = Seq(true, false, true, false, true, false)
       val expected = Seq(false, false, true, false, true, false)
